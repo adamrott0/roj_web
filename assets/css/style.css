@@ -1,3 +1,35 @@
+/* @font-face { font-family: "Fira Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/fira-sans-v18-latin/fira-sans-v18-latin-regular.woff2") format("woff2"); }
+@font-face { font-family: "Fira Sans"; font-style: normal; font-weight: 700; font-display: swap; src: url("../fonts/fira-sans-v18-latin/fira-sans-v18-latin-700.woff2") format("woff2"); }
+@font-face {
+  font-family: "Signika";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../fonts/signika-v29-latin/signika-v29-latin-regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Signika";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../fonts/signika-v29-latin/signika-v29-latin-600.woff2") format("woff2");
+} */
+@font-face { font-family: "AR One Sans"; font-style: normal; font-weight: 400; font-display: swap; src: url("../fonts/ar-one-sans-v6-latin_latin-ext/ar-one-sans-v6-latin_latin-ext-regular.woff2") format("woff2"); }
+@font-face { font-family: "AR One Sans"; font-style: normal; font-weight: 600; font-display: swap; src: url("../fonts/ar-one-sans-v6-latin_latin-ext/ar-one-sans-v6-latin_latin-ext-600.woff2") format("woff2"); }
+h1, h2, h3, h4, h5, h6, strong, b { font-weight: 600; }
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+  color: var(--ink);
+  background: var(--paper);
+  font-family: "Trebuchet MS", "AR One Sans", "Signika", sans-serif;
+  font-size: 1.05rem;
+  line-height: 1.55;
+}
+
+
 :root {
   --ink: #17231f;
   --forest: #254c3b;
@@ -12,15 +44,6 @@
 
 * { box-sizing: border-box; }
 html { overflow-x: hidden; scroll-behavior: smooth; }
-body {
-  margin: 0;
-  overflow-x: hidden;
-  color: var(--ink);
-  background: var(--paper);
-  font-family: "Fira Sans", "Trebuchet MS", sans-serif;
-  font-size: 1.05rem;
-  line-height: 1.55;
-}
 
 img { display: block; max-width: 100%; height: auto; }
 a { color: var(--forest); text-decoration-thickness: .08em; text-underline-offset: .16em; }
