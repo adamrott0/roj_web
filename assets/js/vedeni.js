@@ -35,7 +35,7 @@ function createElement(tag, className, text) {
 function createLeaderCard(person) {
   const card = createElement("article", "leader-card");
   const image = createElement("img", "leader-card__photo");
-  image.src = `../assets/img/vedeni/${person.filename}`;
+  image.src = `../assets/img/vedeni/foto_vedeni/${person.filename}`;
   image.alt = `Portrét: ${person.name}`;
   image.loading = "lazy";
   card.append(image);

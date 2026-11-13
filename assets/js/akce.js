@@ -86,7 +86,7 @@ function createModal() {
     document.body.style.overflow = "";
   };
   const openModal = (event) => {
-    image.src = `../assets/img/akce/${event.filename}`;
+    image.src = `../assets/img/akce/listecky/${event.filename}`;
     image.alt = `Lístek akce: ${event.name}`;
     modal.hidden = false;
     document.body.style.overflow = "hidden";
