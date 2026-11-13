@@ -12,10 +12,12 @@
   <div data-component="header"></div>
   <main>
     <section class="hero">
-      <!-- <img src="../assets/img/akce/hero.jpg" width="1440" height="1920" alt="" fetchpriority="high"> -->
-      <img src="../assets/img/foto_akce2.jpg" width="1440" height="1920" alt="" fetchpriority="high">
-      <h1>Akce</h1>
-    </section>
+  <picture>
+    <source media="(max-width: 44rem)" srcset="../assets/img/akce/hero_phone.jpg">
+    <img src="../assets/img/akce/hero.jpg" width="1440" height="1920" alt="" fetchpriority="high">
+  </picture>
+  <h1>Akce</h1>
+</section>
     <section class="content-section events-section">
       <div id="akce-seznam"></div>
     </section>
