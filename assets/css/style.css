@@ -121,10 +121,10 @@ main .b-btn-l { display: inline-block; padding: .75rem 1rem; color: var(--white)
 .leader-card__name { margin: 0; color: var(--forest); font-size: 1.2rem; font-weight: 600; }
 .leader-card__role { margin: .25rem 0 .5rem; color: var(--muted); }
 .leader-card__contact { margin: .15rem 0; font-size: .95rem; overflow-wrap: anywhere; }
-.modal { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: .75rem; background: rgba(15, 23, 19, .84); }
+.modal { position: fixed; inset: 0; z-index: 20; display: flex; align-items: center; justify-content: center; padding: .75rem; background: rgba(15, 23, 19, .84); }
 .modal[hidden] { display: none; }
-.modal__panel { position: relative; max-width: 100%; max-height: 100%; }
-.modal__image { display: block; width: auto; height: auto; max-width: 100%; max-height: calc(100dvh - 1.5rem); object-fit: contain; box-shadow: 0 1rem 3rem rgba(0, 0, 0, .35); border-radius: 4px; }
+.modal__panel { position: relative; display: flex; max-width: 100%; max-height: 100%; }
+.modal__image { display: block; max-width: 100%; max-height: calc(100dvh - 1.5rem); width: auto; height: auto; box-shadow: 0 1rem 3rem rgba(0, 0, 0, .35); }
 .modal__close { position: absolute; top: .5rem; right: .5rem; z-index: 1; width: 2.5rem; height: 2.5rem; border: 0; border-radius: 50%; color: var(--ink); background: var(--white); font-size: 1.5rem; line-height: 1; cursor: pointer; box-shadow: 0 .25rem .75rem rgba(0,0,0,.2); }
 .modal__close:hover, .modal__close:focus-visible { color: var(--white); background: var(--accent); }
 
@@ -226,7 +226,6 @@ main .b-btn-l { display: inline-block; padding: .75rem 1rem; color: var(--white)
   .event-card__details { display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; margin-top: .25rem; }
   .event-card__button { display: block; margin-top: .6rem; }
   .modal { padding: 1rem; }
-  .modal__panel { width: 96vw; height: 88vh; }
   .modal__close { top: .25rem; right: .25rem; }
   .rajce-albums-view tbody { display: block !important; }
   .rajce-albums-view, .rajce-albums-view tbody, .rajce-albums-view tr, .rajce-albums-view td { width: 100% !important; }
