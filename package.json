@@ -1,0 +1,9 @@
+{
+  "name": "oddil-roj-web",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Webové stránky oddílu ROJ",
+  "scripts": {
+    "build:rules": "node scripts/build-rules.mjs"
+  }
+}

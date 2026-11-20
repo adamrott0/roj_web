@@ -1,0 +1,41 @@
+rules_version = '2';
+// Tento soubor byl automaticky vygenerován ze souboru admins.json
+// Pro úpravu pravidel nebo adminů upravte admins.json a spusťte: npm run build:rules
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isAdmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email in [
+          'adam.rott@modrykruh.cz',
+          'aneta.merinska@modrykruh.cz',
+          'andrea.holubova@modrykruh.cz',
+          'david.prochazka@modrykruh.cz',
+          'lukas.dostal@modrykruh.cz',
+          'jiri.merinsky@modrykruh.cz',
+          'alexandr.sekera@modrykruh.cz',
+          'ondrej.krizek@modrykruh.cz'
+        ];
+    }
+
+    // Akce (produkční i testovací)
+    match /akce/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /test_akce/{docId} { allow read: if true; allow write: if isAdmin(); }
+
+    // Vedení (produkční i testovací)
+    match /vedeni/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /test_vedeni/{docId} { allow read: if true; allow write: if isAdmin(); }
+
+    // Obsah webu a tábora (produkční i testovací)
+    match /tabor/{docId} { allow read: if true; allow write: if isAdmin(); }
+    match /test_tabor/{docId} { allow read: if true; allow write: if isAdmin(); }
+
+    // Administrace a brána ověření
+    match /admin/{docId} { allow read, write: if isAdmin(); }
+
+    // Audit logy (produkční i testovací)
+    match /log/{docId} { allow read, write: if isAdmin(); }
+    match /test_log/{docId} { allow read, write: if isAdmin(); }
+  }
+}

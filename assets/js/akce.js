@@ -1,4 +1,4 @@
-import { db } from "./firebase-config.js";
+import { db, getCollectionName } from "./firebase-config.js";
 import {
   collection, getDocs, query, orderBy
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
@@ -7,7 +7,7 @@ let eventsPromise = null;
 
 function fetchEvents() {
   if (!eventsPromise) {
-    const q = query(collection(db, "akce"), orderBy("dateStart", "asc"));
+    const q = query(collection(db, getCollectionName("akce")), orderBy("dateStart", "asc"));
     eventsPromise = getDocs(q).then((snap) =>
       snap.docs.map((d) => ({ id: d.id, ...d.data() }))
     );

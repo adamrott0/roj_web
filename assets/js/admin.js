@@ -1,6 +1,6 @@
-import { app, db } from "../assets/js/firebase-config.js";
+import { app, db, auth, getCollectionName, isTesting } from "./firebase-config.js";
 import {
-  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import {
   collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
@@ -10,7 +10,6 @@ import {
   getStorage, ref, uploadBytes, getDownloadURL, deleteObject
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-storage.js";
 
-const auth = getAuth(app);
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
 
@@ -20,6 +19,7 @@ const adminView = document.getElementById("admin-view");
 const userBar = document.getElementById("user-bar");
 const userEmailEl = document.getElementById("user-email");
 const authError = document.getElementById("auth-error");
+const testingBadge = document.getElementById("testing-badge");
 
 const form = document.getElementById("event-form");
 const formTitle = document.getElementById("form-title");
@@ -41,10 +41,15 @@ let currentUser = null;
 let cachedEvents = [];
 let editingEvent = null;
 
+// Indikace testovacího prostředí
+if (testingBadge && isTesting) {
+  testingBadge.hidden = false;
+}
+
 // --- PŘIHLAŠOVÁNÍ A OVĚŘENÍ OPRÁVNĚNÍ ---
 
-document.getElementById("login-btn").addEventListener("click", async () => {
-  authError.hidden = true;
+document.getElementById("login-btn")?.addEventListener("click", async () => {
+  if (authError) authError.hidden = true;
   try {
     await signInWithPopup(auth, provider);
   } catch (err) {
@@ -52,14 +57,14 @@ document.getElementById("login-btn").addEventListener("click", async () => {
   }
 });
 
-document.getElementById("logout-btn").addEventListener("click", () => signOut(auth));
+document.getElementById("logout-btn")?.addEventListener("click", () => signOut(auth));
 
 onAuthStateChanged(auth, async (user) => {
   if (!user) {
     currentUser = null;
-    loginView.hidden = false;
-    adminView.hidden = true;
-    userBar.hidden = true;
+    if (loginView) loginView.hidden = false;
+    if (adminView) adminView.hidden = true;
+    if (userBar) userBar.hidden = true;
     return;
   }
 
@@ -73,15 +78,16 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   currentUser = user;
-  userEmailEl.textContent = user.email;
-  authError.hidden = true;
-  loginView.hidden = true;
-  adminView.hidden = false;
-  userBar.hidden = false;
+  if (userEmailEl) userEmailEl.textContent = user.email;
+  if (authError) authError.hidden = true;
+  if (loginView) loginView.hidden = true;
+  if (adminView) adminView.hidden = false;
+  if (userBar) userBar.hidden = false;
   await loadEvents();
 });
 
 function showAuthError(msg) {
+  if (!authError) return;
   authError.textContent = msg;
   authError.hidden = false;
 }
@@ -89,21 +95,28 @@ function showAuthError(msg) {
 // --- PRÁCE S AKCEMI (CRUD) ---
 
 async function loadEvents() {
+  if (!eventsList) return;
   eventsList.textContent = "Načítám akce…";
-  const q = query(collection(db, "akce"), orderBy("dateStart", "desc"));
-  const snapshot = await getDocs(q);
-  cachedEvents = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-  renderEvents();
+  try {
+    const q = query(collection(db, getCollectionName("akce")), orderBy("dateStart", "desc"));
+    const snapshot = await getDocs(q);
+    cachedEvents = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+    renderEvents();
+  } catch (err) {
+    console.error(err);
+    eventsList.textContent = "Chyba při načítání akcí: " + err.message;
+  }
 }
 
 function renderEvents() {
+  if (!eventsList) return;
   if (!cachedEvents.length) {
     eventsList.textContent = "Zatím nejsou přidané žádné akce.";
     return;
   }
 
   eventsList.innerHTML = cachedEvents.map((ev) => `
-    <div class="event-row">
+    <div class="admin-event-row">
       <div>
         <strong>${escapeHtml(ev.name)}</strong>
         <div class="meta">
@@ -114,14 +127,14 @@ function renderEvents() {
         </div>
       </div>
       <div style="display:flex; gap:.5rem; flex-shrink:0;">
-        <button type="button" class="secondary" data-edit="${ev.id}">Upravit</button>
-        <button type="button" class="danger" data-delete="${ev.id}">Smazat</button>
+        <button type="button" class="btn secondary" data-edit="${ev.id}">Upravit</button>
+        <button type="button" class="btn danger" data-delete="${ev.id}">Smazat</button>
       </div>
     </div>
   `).join("");
 }
 
-eventsList.addEventListener("click", async (e) => {
+eventsList?.addEventListener("click", async (e) => {
   const editId = e.target.dataset.edit;
   const deleteId = e.target.dataset.delete;
 
@@ -135,7 +148,7 @@ eventsList.addEventListener("click", async (e) => {
   }
 });
 
-form.addEventListener("submit", async (e) => {
+form?.addEventListener("submit", async (e) => {
   e.preventDefault();
   setStatus("Ukládám…");
   submitBtn.disabled = true;
@@ -171,10 +184,10 @@ form.addEventListener("submit", async (e) => {
     };
 
     if (editingEvent) {
-      await updateDoc(doc(db, "akce", editingEvent.id), payload);
+      await updateDoc(doc(db, getCollectionName("akce"), editingEvent.id), payload);
       setStatus("Akce byla upravena.");
     } else {
-      await addDoc(collection(db, "akce"), payload);
+      await addDoc(collection(db, getCollectionName("akce")), payload);
       setStatus("Akce byla přidána.");
     }
 
@@ -191,7 +204,7 @@ form.addEventListener("submit", async (e) => {
 async function deleteEvent(ev) {
   try {
     if (ev.flyerPath) await safeDeleteStorageFile(ev.flyerPath);
-    await deleteDoc(doc(db, "akce", ev.id));
+    await deleteDoc(doc(db, getCollectionName("akce"), ev.id));
     if (editingEvent?.id === ev.id) resetForm();
     await loadEvents();
   } catch (err) {
@@ -222,14 +235,14 @@ function startEdit(ev) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
-cancelEditBtn.addEventListener("click", () => {
+cancelEditBtn?.addEventListener("click", () => {
   resetForm();
   setStatus("");
 });
 
 function resetForm() {
   editingEvent = null;
-  form.reset();
+  form?.reset();
   formTitle.textContent = "Přidat novou akci";
   submitBtn.textContent = "Uložit akci";
   cancelEditBtn.hidden = true;
@@ -294,6 +307,7 @@ async function safeDeleteStorageFile(path) {
 // --- POMOCNÉ FUNKCE ---
 
 function setStatus(msg, isError = false) {
+  if (!formStatus) return;
   formStatus.textContent = msg;
   formStatus.classList.toggle("error", isError);
 }
