@@ -1,4 +1,4 @@
-import { auth } from "./firebase-config.js";
+import { auth, isTesting } from "./firebase-config.js";
 import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 
 const host = window.location.hostname;
@@ -88,6 +88,10 @@ async function initializeComponents() {
       loadComponent("[data-component=footer]", "components/footer.html")
     ]);
     componentsLoaded = true;
+    const testingBadge = document.getElementById("header-testing-badge");
+    if (testingBadge) {
+      testingBadge.hidden = !isTesting;
+    }
     setupNavigation();
     updateAuthUI(currentUser);
   } catch (error) {

@@ -18,19 +18,27 @@ export const auth = getAuth(app);
 /**
  * Režim testovacích dat:
  * - null: automatická detekce (Vercel náhledy a localhost používají test_ prefix)
- * - true: vynuceně testovací data
- * - false: vynuceně produkční data
+ * - true: vynuceně testovací data (i na produkční doméně)
+ * - false: vynuceně produkční/ostrá data (i na localhostu nebo Vercelu)
  */
 export const FORCE_TESTING = null;
 
-const hostname = typeof window !== "undefined" ? window.location.hostname : "";
-const isAutoTesting = hostname.includes("vercel.app") || hostname === "localhost" || hostname === "127.0.0.1";
+function detectTestingMode() {
+  if (typeof FORCE_TESTING === "boolean") {
+    return FORCE_TESTING;
+  }
+  if (typeof window !== "undefined" && window.location) {
+    const host = window.location.hostname;
+    return host.includes("vercel.app") || host === "localhost" || host === "127.0.0.1";
+  }
+  return false;
+}
 
-export const isTesting = FORCE_TESTING !== null ? FORCE_TESTING : isAutoTesting;
+export const isTesting = detectTestingMode();
 
 /**
  * Vrátí název kolekce s případným testovacím prefixem.
- * Např. getCollectionName("akce") vrátí "test_akce" na Vercelu / localhostu, nebo "akce" v produkci.
+ * Např. getCollectionName("akce") vrátí "test_akce" v testovacím režimu nebo "akce" v ostrém režimu.
  */
 export function getCollectionName(baseName) {
   return isTesting ? `test_${baseName}` : baseName;

@@ -43,6 +43,7 @@ body {
 }
 
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 html { overflow-x: hidden; scroll-behavior: smooth; }
 
 img { display: block; max-width: 100%; height: auto; }
@@ -55,6 +56,7 @@ a:hover { color: var(--accent); }
 .brand { display: inline-flex; align-items: center; gap: .75rem; color: var(--ink); text-decoration: none; font-weight: 600; letter-spacing: .03em; }
 .brand__logo { width: 3.25rem; height: 3.25rem; object-fit: contain; }
 .brand__name { font-size: 1.15rem; }
+.badge-testing { display: inline-block; font-size: .75rem; font-weight: 600; padding: .18rem .5rem; border-radius: .25rem; background: var(--accent); color: var(--white); line-height: 1.2; text-decoration: none; }
 .site-navigation { display: flex; align-items: center; gap: clamp(.8rem, 2vw, 1.8rem); margin-left: auto; }
 .site-navigation a { padding: .5rem 0; color: var(--ink); text-decoration: none; font-weight: 600; }
 .site-navigation a[aria-current="page"] { color: var(--accent); }
@@ -109,8 +111,11 @@ main .b-btn-l { display: inline-block; padding: .75rem 1rem; color: var(--white)
 .event-card__details { display: flex; flex-wrap: wrap; gap: .25rem .75rem; align-items: baseline; grid-column: 1;}
 .event-card__date { color: var(--muted); font-size: .95rem; }
 .event-card__contact { color: var(--muted); font-size: .9rem; overflow-wrap: anywhere; }
-.event-card__button { grid-column: 2; grid-row: 1 / span 2; padding: .55rem .75rem; border: 1px solid var(--forest); border-radius: .25rem; color: var(--white); background: var(--forest); font: inherit; cursor: pointer; }
-.event-card__button:hover, .event-card__button:focus-visible { border-color: var(--accent); background: var(--accent); }
+.event-card__actions { grid-column: 2; grid-row: 1 / span 2; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; align-items: center; }
+.event-card__button { padding: .5rem .85rem; border: 1px solid var(--forest); border-radius: .25rem; color: var(--white); background: var(--forest); font: inherit; font-size: .95rem; font-weight: 600; cursor: pointer; text-decoration: none; transition: background .15s ease, border-color .15s ease, color .15s ease; white-space: nowrap; }
+.event-card__button:hover, .event-card__button:focus-visible { border-color: var(--accent); background: var(--accent); color: var(--white); }
+.event-card__button--secondary { background: transparent; color: var(--forest); border-color: var(--forest); }
+.event-card__button--secondary:hover, .event-card__button--secondary:focus-visible { background: var(--moss); color: var(--forest); border-color: var(--forest); }
 .leadership-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2rem 1.5rem; max-width: 64rem; margin: 2rem auto 0; }
 .leadership-section > h2 { text-align: center; }
 .leader-card { min-width: 0; padding-bottom: 1.5rem; border-bottom: 1px solid var(--line); text-align: center; }
@@ -127,6 +132,7 @@ main .b-btn-l { display: inline-block; padding: .75rem 1rem; color: var(--white)
 .modal__image { display: block; max-width: 100%; max-height: calc(100dvh - 1.5rem); width: auto; height: auto; box-shadow: 0 1rem 3rem rgba(0, 0, 0, .35); }
 .modal__close { position: absolute; top: .5rem; right: .5rem; z-index: 1; width: 2.5rem; height: 2.5rem; border: 0; border-radius: 50%; color: var(--ink); background: var(--white); font-size: 1.5rem; line-height: 1; cursor: pointer; box-shadow: 0 .25rem .75rem rgba(0,0,0,.2); }
 .modal__close:hover, .modal__close:focus-visible { color: var(--white); background: var(--accent); }
+.confirm-modal__card { background: var(--white); border: 1px solid var(--line); border-radius: .5rem; padding: 1.5rem; max-width: 28rem; width: 100%; box-shadow: 0 1rem 3rem rgba(0, 0, 0, .35); }
 
 .galerie-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; max-width: 72rem; margin: 0 auto; }
 .album-karta { display: flex; flex-direction: column; overflow: hidden; color: inherit; background: var(--white); border: 1px solid var(--line); border-radius: 8px; text-decoration: none; transition: transform .2s ease, box-shadow .2s ease; }
@@ -225,7 +231,8 @@ main .b-btn-l { display: inline-block; padding: .75rem 1rem; color: var(--white)
   .event-card__body { display: block; padding: .7rem .8rem; }
   .event-card__date { display: block; margin-top: .25rem; }
   .event-card__details { display: flex; flex-direction: column; align-items: flex-start; gap: .1rem; margin-top: .25rem; }
-  .event-card__button { display: block; margin-top: .6rem; }
+  .event-card__actions { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .65rem; }
+  .event-card__actions .event-card__button { flex: 1 1 auto; text-align: center; }
   .modal { padding: 1rem; }
   .modal__close { top: .25rem; right: .25rem; }
   .rajce-albums-view tbody { display: block !important; }
@@ -249,14 +256,14 @@ main .b-btn-l { display: inline-block; padding: .75rem 1rem; color: var(--white)
    ========================================================================== */
 .admin-wrap { max-width: 56rem; margin: 1.5rem auto 3rem; padding: 0 1rem; }
 .admin-topbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--line); }
-.admin-badge-testing { display: inline-block; font-size: .75rem; font-weight: 600; padding: .2rem .5rem; border-radius: .25rem; background: #e07a5f; color: #fff; margin-left: .5rem; vertical-align: middle; }
 .admin-card { background: var(--white); border: 1px solid var(--line); border-radius: .5rem; padding: 1.25rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.03); }
 .admin-form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem; }
 .admin-form label { display: flex; flex-direction: column; gap: .35rem; font-size: .9rem; font-weight: 600; color: var(--ink); }
 .admin-form input[type="text"],
 .admin-form input[type="date"],
 .admin-form input[type="email"],
-.admin-form input[type="file"] { padding: .55rem .7rem; border: 1px solid var(--line); border-radius: .35rem; font: inherit; background: #fff; color: var(--ink); }
+.admin-form input[type="tel"],
+.admin-form input[type="file"] { padding: .55rem .7rem; border: 1px solid var(--line); border-radius: .35rem; font: inherit; background: #fff; color: var(--ink); width: 100%; }
 .admin-form input:focus-visible { outline: 2px solid var(--forest); outline-offset: 1px; }
 .admin-actions { display: flex; flex-wrap: wrap; gap: .6rem; margin-top: 1rem; align-items: center; }
 

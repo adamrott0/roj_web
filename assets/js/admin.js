@@ -19,7 +19,6 @@ const adminView = document.getElementById("admin-view");
 const userBar = document.getElementById("user-bar");
 const userEmailEl = document.getElementById("user-email");
 const authError = document.getElementById("auth-error");
-const testingBadge = document.getElementById("testing-badge");
 
 const form = document.getElementById("event-form");
 const formTitle = document.getElementById("form-title");
@@ -32,19 +31,19 @@ const nameInput = document.getElementById("ev-name");
 const dateStartInput = document.getElementById("ev-date-start");
 const dateEndInput = document.getElementById("ev-date-end");
 const mailInput = document.getElementById("ev-mail");
+const phoneInput = document.getElementById("ev-phone");
 const flyerInput = document.getElementById("ev-flyer");
 const currentFlyerBox = document.getElementById("current-flyer-box");
 const currentFlyerLink = document.getElementById("current-flyer-link");
 const removeFlyerCheckbox = document.getElementById("ev-remove-flyer");
 
+phoneInput?.addEventListener("input", (e) => {
+  e.target.value = formatPhoneNumber(e.target.value);
+});
+
 let currentUser = null;
 let cachedEvents = [];
 let editingEvent = null;
-
-// Indikace testovacího prostředí
-if (testingBadge && isTesting) {
-  testingBadge.hidden = false;
-}
 
 // --- PŘIHLAŠOVÁNÍ A OVĚŘENÍ OPRÁVNĚNÍ ---
 
@@ -92,6 +91,52 @@ function showAuthError(msg) {
   authError.hidden = false;
 }
 
+// --- VLASTNÍ POTVRZOVACÍ DIALOG ---
+
+function confirmAction(title, text) {
+  return new Promise((resolve) => {
+    const modal = document.getElementById("confirm-modal");
+    const titleEl = document.getElementById("confirm-modal-title");
+    const textEl = document.getElementById("confirm-modal-text");
+    const cancelBtn = document.getElementById("confirm-modal-cancel");
+    const confirmBtn = document.getElementById("confirm-modal-confirm");
+
+    if (!modal) {
+      return resolve(window.confirm(`${title}\n\n${text}`));
+    }
+
+    if (titleEl) titleEl.textContent = title;
+    if (textEl) textEl.textContent = text;
+    modal.hidden = false;
+    document.body.style.overflow = "hidden";
+
+    const cleanup = (result) => {
+      modal.hidden = true;
+      document.body.style.overflow = "";
+      cancelBtn?.removeEventListener("click", onCancel);
+      confirmBtn?.removeEventListener("click", onConfirm);
+      document.removeEventListener("keydown", onKeyDown);
+      modal.removeEventListener("click", onBackdrop);
+      resolve(result);
+    };
+
+    const onCancel = () => cleanup(false);
+    const onConfirm = () => cleanup(true);
+    const onKeyDown = (e) => {
+      if (e.key === "Escape") cleanup(false);
+    };
+    const onBackdrop = (e) => {
+      if (e.target === modal) cleanup(false);
+    };
+
+    cancelBtn?.addEventListener("click", onCancel);
+    confirmBtn?.addEventListener("click", onConfirm);
+    document.addEventListener("keydown", onKeyDown);
+    modal.addEventListener("click", onBackdrop);
+    confirmBtn?.focus();
+  });
+}
+
 // --- PRÁCE S AKCEMI (CRUD) ---
 
 async function loadEvents() {
@@ -121,7 +166,8 @@ function renderEvents() {
         <strong>${escapeHtml(ev.name)}</strong>
         <div class="meta">
           ${formatDateRange(ev.dateStart, ev.dateEnd)}
-          · ${escapeHtml(ev.mail || "")}
+          ${ev.mail ? `· ${escapeHtml(ev.mail)}` : ""}
+          ${ev.phone ? `· ${escapeHtml(ev.phone)}` : ""}
           ${ev.flyerUrl ? `· <a href="${escapeHtml(ev.flyerUrl)}" target="_blank" rel="noopener">lísteček</a>` : "· bez lístečku"}
           ${ev.updatedBy ? `· upravil: ${escapeHtml(ev.updatedBy)}` : ""}
         </div>
@@ -143,13 +189,26 @@ eventsList?.addEventListener("click", async (e) => {
     if (ev) startEdit(ev);
   } else if (deleteId) {
     const ev = cachedEvents.find((x) => x.id === deleteId);
-    if (!ev || !confirm(`Opravdu smazat akci „${ev.name}“?`)) return;
+    if (!ev) return;
+    const ok = await confirmAction(
+      `Smazat akci „${ev.name}“?`,
+      "Smazáním se odstraní záznam akce i nahraný lísteček. Tuto operaci nelze vrátit zpět."
+    );
+    if (!ok) return;
     await deleteEvent(ev);
   }
 });
 
 form?.addEventListener("submit", async (e) => {
   e.preventDefault();
+
+  // Validace datumu
+  if (dateEndInput.value && dateEndInput.value < dateStartInput.value) {
+    setStatus("Datum konce akce nesmí být dřívější než datum začátku.", true);
+    dateEndInput.focus();
+    return;
+  }
+
   setStatus("Ukládám…");
   submitBtn.disabled = true;
 
@@ -177,6 +236,7 @@ form?.addEventListener("submit", async (e) => {
       dateStart: dateStartInput.value,
       dateEnd: dateEndInput.value || "",
       mail: mailInput.value.trim(),
+      phone: phoneInput ? phoneInput.value.trim() : "",
       flyerUrl,
       flyerPath,
       updatedBy: currentUser.email,
@@ -222,6 +282,7 @@ function startEdit(ev) {
   dateStartInput.value = ev.dateStart || "";
   dateEndInput.value = ev.dateEnd || "";
   mailInput.value = ev.mail || "";
+  if (phoneInput) phoneInput.value = ev.phone || "";
   flyerInput.value = "";
   removeFlyerCheckbox.checked = false;
 
@@ -254,7 +315,7 @@ function resetForm() {
 async function uploadFlyer(file) {
   const prepared = await prepareFile(file, 1600);
   const safeBase = file.name.replace(/\.[^.]+$/, "").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 40);
-  const path = `flyers/${Date.now()}_${safeBase}.${prepared.ext}`;
+  const path = `listecky/${Date.now()}_${safeBase}.${prepared.ext}`;
   const storageRef = ref(storage, path);
 
   await uploadBytes(storageRef, prepared.blob, {
@@ -267,8 +328,13 @@ async function uploadFlyer(file) {
 }
 
 function prepareFile(file, maxDim) {
-  if (file.type === "application/pdf") {
-    return Promise.resolve({ blob: file, ext: "pdf", contentType: "application/pdf" });
+  if (!file.type.startsWith("image/")) {
+    return Promise.reject(new Error("Vybraný soubor není platný obrázek (povolené jsou pouze JPG, PNG, WebP)."));
+  }
+
+  // Bezpečnostní limit před načtením do paměti (20 MB)
+  if (file.size > 20 * 1024 * 1024) {
+    return Promise.reject(new Error("Vybraný obrázek je příliš velký (maximum je 20 MB)."));
   }
 
   return new Promise((resolve, reject) => {
@@ -324,4 +390,27 @@ function formatDateRange(start, end) {
 
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function formatPhoneNumber(value) {
+  if (!value) return "";
+  const trimmed = value.trim();
+  const isInternational = trimmed.startsWith("+");
+  const digits = trimmed.replace(/\D/g, "");
+
+  if (!digits) return isInternational ? "+" : "";
+
+  if (isInternational && digits.startsWith("420")) {
+    const rest = digits.slice(3, 12);
+    const groups = rest.match(/.{1,3}/g) || [];
+    return `+420 ${groups.join(" ")}`.trim();
+  }
+
+  if (!isInternational) {
+    const groups = digits.slice(0, 9).match(/.{1,3}/g) || [];
+    return groups.join(" ");
+  }
+
+  const groups = digits.slice(0, 15).match(/.{1,3}/g) || [];
+  return `+${groups.join(" ")}`;
 }

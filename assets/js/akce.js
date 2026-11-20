@@ -34,7 +34,7 @@ function formatEventDate(start, end) {
   const [ey, em, ed] = end.split("-").map(Number);
 
   if (sy === ey && sm === em) {
-    return `${sd}.–${ed}. ${sm}. ${sy}`;
+    return `${sd}. – ${ed}. ${sm}. ${sy}`;
   }
   if (sy === ey) {
     return `${sd}. ${sm}. – ${ed}. ${em}. ${sy}`;
@@ -42,11 +42,32 @@ function formatEventDate(start, end) {
   return `${sd}. ${sm}. ${sy} – ${ed}. ${em}. ${ey}`;
 }
 
-function isPdfFlyer(event) {
-  return Boolean(
-    event.flyerPath?.toLowerCase().endsWith(".pdf") ||
-    event.flyerUrl?.toLowerCase().includes(".pdf")
-  );
+async function downloadImage(url, filename, buttonEl) {
+  const originalHtml = buttonEl ? buttonEl.innerHTML : "";
+  if (buttonEl) {
+    buttonEl.disabled = true;
+    buttonEl.textContent = "Stahuji…";
+  }
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = blobUrl;
+    link.download = filename;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(blobUrl);
+  } catch (err) {
+    console.warn("Přímé stažení se nezdařilo, otevírám soubor v novém okně:", err);
+    window.open(url, "_blank", "noopener,noreferrer");
+  } finally {
+    if (buttonEl) {
+      buttonEl.disabled = false;
+      buttonEl.innerHTML = originalHtml;
+    }
+  }
 }
 
 function createElement(tag, className, text) {
@@ -69,6 +90,7 @@ function createModal() {
   close.setAttribute("aria-label", "Zavřít náhled");
   const image = createElement("img", "modal__image");
   image.alt = "Lístek akce";
+
   panel.append(close, image);
   modal.append(panel);
   document.body.append(modal);
@@ -119,16 +141,26 @@ function createEventCard(event, openModal) {
   body.append(createElement("h3", "event-card__title", event.name), details);
 
   if (event.flyerUrl) {
-    const button = createElement("button", "event-card__button", "Zobrazit lísteček");
-    button.type = "button";
-    button.addEventListener("click", () => {
-      if (isPdfFlyer(event)) {
-        window.open(event.flyerUrl, "_blank", "noopener,noreferrer");
-      } else {
-        openModal(event);
-      }
+    const actions = createElement("div", "event-card__actions");
+
+    const viewBtn = createElement("button", "event-card__button", "Zobrazit lísteček");
+    viewBtn.type = "button";
+    viewBtn.addEventListener("click", () => openModal(event));
+
+    const downloadBtn = createElement("button", "event-card__button event-card__button--secondary", "Stáhnout lísteček");
+    downloadBtn.type = "button";
+    downloadBtn.addEventListener("click", () => {
+      const safeName = (event.name || "akce")
+        .replace(/[\\/:*?"<>|]/g, "")
+        .trim()
+        .replace(/\s+/g, "_");
+      const ext = event.flyerPath?.split(".").pop() || "webp";
+      const filename = `${safeName}.${ext}`;
+      downloadImage(event.flyerUrl, filename, downloadBtn);
     });
-    body.append(button);
+
+    actions.append(viewBtn, downloadBtn);
+    body.append(actions);
   }
 
   article.append(body);

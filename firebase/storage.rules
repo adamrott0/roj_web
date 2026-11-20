@@ -1,6 +1,6 @@
 rules_version = '2';
 // Tento soubor byl automaticky vygenerován ze souboru admins.json
-// Pro úpravu pravidel nebo adminů upravte admins.json a spusťte: npm run build:rules
+// Pro úpravu pravidel nebo adminů upravte firebase/admins.json a spusťte: npm run build:rules
 
 service firebase.storage {
   match /b/{bucket}/o {

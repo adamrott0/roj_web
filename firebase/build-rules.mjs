@@ -4,10 +4,11 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, "..");
+const firebaseDir = __dirname;
 
-const adminsPath = path.join(rootDir, "admins.json");
-const firestoreRulesPath = path.join(rootDir, "firestore.rules");
-const storageRulesPath = path.join(rootDir, "storage.rules");
+const adminsPath = path.join(firebaseDir, "admins.json");
+const firestoreRulesPath = path.join(firebaseDir, "firestore.rules");
+const storageRulesPath = path.join(firebaseDir, "storage.rules");
 
 if (!fs.existsSync(adminsPath)) {
   console.error("Chyba: Soubor admins.json nebyl nalezen!");
@@ -25,7 +26,7 @@ const formattedAdmins = admins.map((mail) => `          '${mail.trim().toLowerCa
 // --- 1. FIRESTORE RULES ---
 const firestoreRules = `rules_version = '2';
 // Tento soubor byl automaticky vygenerován ze souboru admins.json
-// Pro úpravu pravidel nebo adminů upravte admins.json a spusťte: npm run build:rules
+// Pro úpravu pravidel nebo adminů upravte firebase/admins.json a spusťte: npm run build:rules
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -62,7 +63,7 @@ ${formattedAdmins}
 // --- 2. STORAGE RULES ---
 const storageRules = `rules_version = '2';
 // Tento soubor byl automaticky vygenerován ze souboru admins.json
-// Pro úpravu pravidel nebo adminů upravte admins.json a spusťte: npm run build:rules
+// Pro úpravu pravidel nebo adminů upravte firebase/admins.json a spusťte: npm run build:rules
 
 service firebase.storage {
   match /b/{bucket}/o {

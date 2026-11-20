@@ -6,10 +6,7 @@ on:
       - main
       - testing
     paths:
-      - 'admins.json'
-      - 'firestore.rules'
-      - 'storage.rules'
-      - 'scripts/build-rules.mjs'
+      - 'firebase/**'
       - 'firebase.json'
       - '.github/workflows/deploy-firebase-rules.yml'
   workflow_dispatch:
@@ -27,7 +24,7 @@ jobs:
           node-version: 20
 
       - name: Sestavení pravidel z admins.json
-        run: node scripts/build-rules.mjs
+        run: node firebase/build-rules.mjs
 
       - name: Nasazení pravidel do Firebase
         run: npx firebase-tools deploy --only firestore:rules,storage --token "${{ secrets.FIREBASE_TOKEN }}" --project oddil-roj-ac78b
