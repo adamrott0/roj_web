@@ -9,6 +9,10 @@ import {
 import {
   getStorage, ref, uploadBytes, getDownloadURL, deleteObject
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-storage.js";
+import {
+  escapeHtml, formatDate, formatDateRange, formatTimestamp, formatPhoneNumber
+} from "./utils.js";
+import "./lightbox.js";
 
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
@@ -73,11 +77,6 @@ const ldrPhotoInput = document.getElementById("ldr-photo");
 const currentLeaderPhotoBox = document.getElementById("current-leader-photo-box");
 const currentLeaderPhotoLink = document.getElementById("current-leader-photo-link");
 const ldrHideCheckbox = document.getElementById("ldr-hide");
-
-// Náhled obrázku v modalu
-const imageModal = document.getElementById("image-modal");
-const imageModalImg = document.getElementById("image-modal-img");
-const imageModalClose = document.getElementById("image-modal-close");
 
 // Detail změn v historii
 const logDetailModal = document.getElementById("log-detail-modal");
@@ -193,12 +192,12 @@ function closeModal(modal) {
 }
 
 function isAnyModalOpen() {
-  const modals = [eventModal, leaderModal, imageModal, document.getElementById("confirm-modal")];
+  const modals = [eventModal, leaderModal, logDetailModal, document.getElementById("confirm-modal")];
   return modals.some((m) => m && !m.hidden);
 }
 
-// Zavírání modálů po kliknutí na pozadí, křížek a Escape
-[eventModal, leaderModal, imageModal].forEach((modal) => {
+// Zavírání modálů po kliknutí na pozadí
+[eventModal, leaderModal, logDetailModal].forEach((modal) => {
   modal?.addEventListener("click", (e) => {
     if (e.target === modal) closeModal(modal);
   });
@@ -210,8 +209,6 @@ eventCancelBtn?.addEventListener("click", () => closeModal(eventModal));
 closeLeaderModalBtn?.addEventListener("click", () => closeModal(leaderModal));
 leaderCancelBtn?.addEventListener("click", () => closeModal(leaderModal));
 
-imageModalClose?.addEventListener("click", () => closeModal(imageModal));
-
 closeLogDetailModalBtn?.addEventListener("click", () => closeModal(logDetailModal));
 closeLogDetailBtn?.addEventListener("click", () => closeModal(logDetailModal));
 logDetailModal?.addEventListener("click", (e) => {
@@ -220,29 +217,9 @@ logDetailModal?.addEventListener("click", (e) => {
 
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
-    if (imageModal && !imageModal.hidden) closeModal(imageModal);
-    else if (logDetailModal && !logDetailModal.hidden) closeModal(logDetailModal);
+    if (logDetailModal && !logDetailModal.hidden) closeModal(logDetailModal);
     else if (eventModal && !eventModal.hidden) closeModal(eventModal);
     else if (leaderModal && !leaderModal.hidden) closeModal(leaderModal);
-  }
-});
-
-function showImagePreview(url, alt = "Náhled") {
-  if (!imageModal || !imageModalImg) {
-    window.open(url, "_blank", "noopener,noreferrer");
-    return;
-  }
-  imageModalImg.src = url;
-  imageModalImg.alt = alt;
-  openModal(imageModal);
-}
-
-document.addEventListener("click", (e) => {
-  const previewTrigger = e.target.closest("[data-preview-img]");
-  if (previewTrigger) {
-    e.preventDefault();
-    const url = previewTrigger.dataset.previewImg || previewTrigger.getAttribute("href");
-    if (url) showImagePreview(url);
   }
 });
 
@@ -1192,67 +1169,4 @@ async function safeDeleteStorageFile(path) {
   } catch (err) {
     if (err.code !== "storage/object-not-found") console.warn("Mazání ze Storage:", err);
   }
-}
-
-// ==========================================================================
-// 4. POMOCNÉ FUNKCE
-// ==========================================================================
-
-function formatDate(iso) {
-  if (!iso) return "";
-  const [y, m, d] = iso.split("-");
-  return `${Number(d)}. ${Number(m)}. ${y}`;
-}
-
-function formatDateRange(start, end) {
-  return end && end !== start ? `${formatDate(start)} – ${formatDate(end)}` : formatDate(start);
-}
-
-function formatTimestamp(ts) {
-  if (!ts) return "–";
-  let date;
-  if (typeof ts.toDate === "function") {
-    date = ts.toDate();
-  } else if (ts.seconds) {
-    date = new Date(ts.seconds * 1000);
-  } else if (ts instanceof Date) {
-    date = ts;
-  } else {
-    date = new Date(ts);
-  }
-  if (Number.isNaN(date.getTime())) return "–";
-
-  const d = date.getDate();
-  const m = date.getMonth() + 1;
-  const y = date.getFullYear();
-  const hh = String(date.getHours()).padStart(2, "0");
-  const mm = String(date.getMinutes()).padStart(2, "0");
-  return `${d}. ${m}. ${y} ${hh}:${mm}`;
-}
-
-function escapeHtml(str) {
-  return String(str || "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-}
-
-function formatPhoneNumber(value) {
-  if (!value) return "";
-  const trimmed = value.trim();
-  const isInternational = trimmed.startsWith("+");
-  const digits = trimmed.replace(/\D/g, "");
-
-  if (!digits) return isInternational ? "+" : "";
-
-  if (isInternational && digits.startsWith("420")) {
-    const rest = digits.slice(3, 12);
-    const groups = rest.match(/.{1,3}/g) || [];
-    return `+420 ${groups.join(" ")}`.trim();
-  }
-
-  if (!isInternational) {
-    const groups = digits.slice(0, 9).match(/.{1,3}/g) || [];
-    return groups.join(" ");
-  }
-
-  const groups = digits.slice(0, 15).match(/.{1,3}/g) || [];
-  return `+${groups.join(" ")}`;
 }

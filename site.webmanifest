@@ -1,0 +1,17 @@
+{
+  "name": "Oddíl ROJ",
+  "short_name": "ROJ",
+  "description": "Pražský dětský tábornický oddíl ROJ (73. PTO)",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f5f4ee",
+  "theme_color": "#254c3b",
+  "icons": [
+    {
+      "src": "assets/img/shared/logo.png",
+      "sizes": "192x192 512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

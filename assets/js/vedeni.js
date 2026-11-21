@@ -2,6 +2,7 @@ import { db, getCollectionName } from "./firebase-config.js";
 import {
   collection, getDocs, query, orderBy
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+import "./lightbox.js";
 
 const STATIC_VEDENI = [
   { name: "Anet (Aneta Měřínská)", role: "Hlavní vedoucí oddílu, zdravotnice", filename: "350662-IMG_3960.jpeg", mail: "aneta.merinska@modrykruh.cz", phone: "735 883 580" },
@@ -39,9 +40,15 @@ function createElement(tag, className, text) {
 function createLeaderCard(person) {
   const card = createElement("article", "leader-card");
   const image = createElement("img", "leader-card__photo");
-  image.src = person.photoUrl || (person.filename ? `../assets/img/vedeni/foto_vedeni/${person.filename}` : "");
+  image.src = person.photoUrl || (person.filename ? `../unused/vedeni/foto_vedeni/${person.filename}` : "");
   image.alt = `Portrét: ${person.name}`;
   image.loading = "lazy";
+  if (person.photoUrl) {
+    image.style.cursor = "pointer";
+    image.title = "Kliknutím zobrazíte fotku";
+    image.dataset.previewImg = person.photoUrl;
+    image.dataset.previewAlt = `Portrét: ${person.name}`;
+  }
   card.append(image);
   card.append(createElement("h3", "leader-card__name", person.name));
   card.append(createElement("p", "leader-card__role", person.role));

@@ -2,6 +2,8 @@ import { db, getCollectionName } from "./firebase-config.js";
 import {
   collection, getDocs, query, orderBy
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
+import { formatDateRange, getTodayIso, sanitizeFilename, downloadImage } from "./utils.js";
+import { openLightbox } from "./lightbox.js";
 
 let eventsPromise = null;
 
@@ -15,61 +17,6 @@ function fetchEvents() {
   return eventsPromise;
 }
 
-function getTodayIso() {
-  const now = new Date();
-  const y = now.getFullYear();
-  const m = String(now.getMonth() + 1).padStart(2, "0");
-  const d = String(now.getDate()).padStart(2, "0");
-  return `${y}-${m}-${d}`;
-}
-
-function formatEventDate(start, end) {
-  if (!start) return "";
-  const [sy, sm, sd] = start.split("-").map(Number);
-
-  if (!end || end <= start) {
-    return `${sd}. ${sm}. ${sy}`;
-  }
-
-  const [ey, em, ed] = end.split("-").map(Number);
-
-  if (sy === ey && sm === em) {
-    return `${sd}. – ${ed}. ${sm}. ${sy}`;
-  }
-  if (sy === ey) {
-    return `${sd}. ${sm}. – ${ed}. ${em}. ${sy}`;
-  }
-  return `${sd}. ${sm}. ${sy} – ${ed}. ${em}. ${ey}`;
-}
-
-async function downloadImage(url, filename, buttonEl) {
-  const originalHtml = buttonEl ? buttonEl.innerHTML : "";
-  if (buttonEl) {
-    buttonEl.disabled = true;
-    buttonEl.textContent = "Stahuji…";
-  }
-  try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    const blobUrl = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = blobUrl;
-    link.download = filename;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(blobUrl);
-  } catch (err) {
-    console.warn("Přímé stažení se nezdařilo, otevírám soubor v novém okně:", err);
-    window.open(url, "_blank", "noopener,noreferrer");
-  } finally {
-    if (buttonEl) {
-      buttonEl.disabled = false;
-      buttonEl.innerHTML = originalHtml;
-    }
-  }
-}
-
 function createElement(tag, className, text) {
   const element = document.createElement(tag);
   if (className) element.className = className;
@@ -77,53 +24,12 @@ function createElement(tag, className, text) {
   return element;
 }
 
-function createModal() {
-  const modal = createElement("div", "modal");
-  modal.hidden = true;
-  modal.setAttribute("role", "dialog");
-  modal.setAttribute("aria-modal", "true");
-  modal.setAttribute("aria-label", "Náhled lístečku");
-
-  const panel = createElement("div", "modal__panel");
-  const close = createElement("button", "modal__close", "×");
-  close.type = "button";
-  close.setAttribute("aria-label", "Zavřít náhled");
-  const image = createElement("img", "modal__image");
-  image.alt = "Lístek akce";
-
-  panel.append(close, image);
-  modal.append(panel);
-  document.body.append(modal);
-
-  const closeModal = () => {
-    modal.hidden = true;
-    image.removeAttribute("src");
-    document.body.style.overflow = "";
-  };
-  const openModal = (event) => {
-    image.src = event.flyerUrl;
-    image.alt = `Lístek akce: ${event.name}`;
-    modal.hidden = false;
-    document.body.style.overflow = "hidden";
-    close.focus();
-  };
-
-  close.addEventListener("click", closeModal);
-  modal.addEventListener("click", (event) => {
-    if (event.target === modal) closeModal();
-  });
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && !modal.hidden) closeModal();
-  });
-  return openModal;
-}
-
-function createEventCard(event, openModal) {
+function createEventCard(event) {
   const article = createElement("article", "event-card");
   const body = createElement("div", "event-card__body");
   const details = createElement("div", "event-card__details");
 
-  const time = createElement("time", "event-card__date", formatEventDate(event.dateStart, event.dateEnd));
+  const time = createElement("time", "event-card__date", formatDateRange(event.dateStart, event.dateEnd));
   time.dateTime = event.dateStart;
   details.append(time);
 
@@ -142,20 +48,23 @@ function createEventCard(event, openModal) {
 
   if (event.flyerUrl) {
     const actions = createElement("div", "event-card__actions");
+    const safeName = sanitizeFilename(event.name || "akce");
+    const ext = event.flyerPath?.split(".").pop() || "webp";
+    const filename = `listecek_${safeName}.${ext}`;
 
     const viewBtn = createElement("button", "event-card__button", "Zobrazit lísteček");
     viewBtn.type = "button";
-    viewBtn.addEventListener("click", () => openModal(event));
+    viewBtn.addEventListener("click", () => {
+      openLightbox({
+        src: event.flyerUrl,
+        alt: `Lístek akce: ${event.name}`,
+        downloadFilename: filename
+      });
+    });
 
     const downloadBtn = createElement("button", "event-card__button event-card__button--secondary", "Stáhnout lísteček");
     downloadBtn.type = "button";
     downloadBtn.addEventListener("click", () => {
-      const safeName = (event.name || "akce")
-        .replace(/[\\/:*?"<>|]/g, "")
-        .trim()
-        .replace(/\s+/g, "_");
-      const ext = event.flyerPath?.split(".").pop() || "webp";
-      const filename = `listecek_${safeName}.${ext}`;
       downloadImage(event.flyerUrl, filename, downloadBtn);
     });
 
@@ -180,13 +89,12 @@ async function renderEvents() {
 
     const upcoming = visibleEvents.filter((ev) => (ev.dateEnd || ev.dateStart) >= today);
     const past = visibleEvents.filter((ev) => (ev.dateEnd || ev.dateStart) < today).reverse();
-    const openModal = createModal();
 
     const renderGroup = (title, groupEvents) => {
       const heading = createElement("h2", "events-heading", title);
       const list = createElement("div", "events-list");
       if (groupEvents.length) {
-        groupEvents.forEach((ev) => list.append(createEventCard(ev, openModal)));
+        groupEvents.forEach((ev) => list.append(createEventCard(ev)));
       } else {
         list.append(createElement("p", "events-empty", "Momentálně nejsou žádné akce."));
       }
@@ -218,7 +126,7 @@ export async function renderNextEvent() {
       target.textContent = "Další akce brzy doplníme.";
       return;
     }
-    target.textContent = `${nextEvent.name} – ${formatEventDate(nextEvent.dateStart, nextEvent.dateEnd)}`;
+    target.textContent = `${nextEvent.name} – ${formatDateRange(nextEvent.dateStart, nextEvent.dateEnd)}`;
   } catch (error) {
     console.error("Nepodařilo se načíst nejbližší akci:", error);
   }
