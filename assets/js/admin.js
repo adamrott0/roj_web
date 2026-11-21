@@ -12,7 +12,7 @@ import {
 import {
   escapeHtml, formatDate, formatDateRange, formatTimestamp, formatPhoneNumber
 } from "./utils.js";
-import "./lightbox.js";
+import { openModal, closeModal } from "./lightbox.js";
 
 const storage = getStorage(app);
 const provider = new GoogleAuthProvider();
@@ -176,33 +176,7 @@ function switchTab(tabName) {
   }
 }
 
-// --- MODÁLNÍ OKNA (OTEVÍRÁNÍ / ZAVÍRÁNÍ) ---
-function openModal(modal) {
-  if (!modal) return;
-  modal.hidden = false;
-  document.body.style.overflow = "hidden";
-}
-
-function closeModal(modal) {
-  if (!modal) return;
-  modal.hidden = true;
-  if (!isAnyModalOpen()) {
-    document.body.style.overflow = "";
-  }
-}
-
-function isAnyModalOpen() {
-  const modals = [eventModal, leaderModal, logDetailModal, document.getElementById("confirm-modal")];
-  return modals.some((m) => m && !m.hidden);
-}
-
-// Zavírání modálů po kliknutí na pozadí
-[eventModal, leaderModal, logDetailModal].forEach((modal) => {
-  modal?.addEventListener("click", (e) => {
-    if (e.target === modal) closeModal(modal);
-  });
-});
-
+// Zavírání modálů formulářů tlačítky
 closeEventModalBtn?.addEventListener("click", () => closeModal(eventModal));
 eventCancelBtn?.addEventListener("click", () => closeModal(eventModal));
 
@@ -211,17 +185,6 @@ leaderCancelBtn?.addEventListener("click", () => closeModal(leaderModal));
 
 closeLogDetailModalBtn?.addEventListener("click", () => closeModal(logDetailModal));
 closeLogDetailBtn?.addEventListener("click", () => closeModal(logDetailModal));
-logDetailModal?.addEventListener("click", (e) => {
-  if (e.target === logDetailModal) closeModal(logDetailModal);
-});
-
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") {
-    if (logDetailModal && !logDetailModal.hidden) closeModal(logDetailModal);
-    else if (eventModal && !eventModal.hidden) closeModal(eventModal);
-    else if (leaderModal && !leaderModal.hidden) closeModal(leaderModal);
-  }
-});
 
 // --- VLASTNÍ POTVRZOVACÍ DIALOG ---
 function confirmAction(title, text) {

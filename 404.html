@@ -5,7 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Stránka nenalezena (404) | Oddíl ROJ</title>
   <meta name="robots" content="noindex">
+  <script>
+    (function() {
+      var isGh = location.hostname.endsWith('github.io');
+      var base = isGh ? '/' + location.pathname.split('/')[1] + '/' : '/';
+      document.write('<base href="' + base + '">');
+    })();
+  </script>
+  <meta name="theme-color" content="#f5f4ee">
   <link rel="icon" type="image/png" href="assets/img/shared/logo.png?v=1">
+  <link rel="apple-touch-icon" href="assets/img/shared/icon-192.png">
+  <link rel="manifest" href="site.webmanifest">
   <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body data-page="404">

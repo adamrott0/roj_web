@@ -1,32 +1,42 @@
 <footer class="site-footer">
   <div class="site-footer__inner">
-    <nav class="footer-links" aria-label="Kontaktní odkazy">
-      <a href="mailto:roj@modrykruh.cz">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
-        roj@modrykruh.cz
-      </a>
-      <a href="https://www.oddil-roj.cz/" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
-        oddil-roj.cz
-      </a>
-      <a href="https://www.instagram.com/oddil_roj/" target="_blank" rel="noopener noreferrer">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-        @oddil_roj
-      </a>
-    </nav>
-    <div class="footer-billing">
-      <p class="footer-billing__title">Tábornický klub Modrý Kruh · 73. PTO ROJ</p>
-      <p class="footer-billing__info">
-        <span>IČO: [DOPLNIT IČO]</span> ·
-        <span>Číslo účtu: [DOPLNIT ČÍSLO ÚČTU]</span> ·
-        <span>Sídlo: [DOPLNIT ADRESU SÍDLA]</span>
-      </p>
+    <div class="footer-col footer-col--links">
+      <nav class="footer-links" aria-label="Kontaktní odkazy">
+        <a href="mailto:roj@modrykruh.cz">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          roj@modrykruh.cz
+        </a>
+        <a href="https://www.oddil-roj.cz/" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+          oddil-roj.cz
+        </a>
+        <a href="https://www.instagram.com/oddil_roj/" target="_blank" rel="noopener noreferrer">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
+          @oddil_roj
+        </a>
+      </nav>
+      <div class="footer-admin-bar">
+        <a class="footer-admin-link" href="{{ROOT}}admin/">Sekce pro vedení</a>
+        <span id="footer-logout-container" hidden>
+          · <button type="button" class="btn-logout" id="footer-logout-btn">Odhlásit se</button>
+        </span>
+      </div>
     </div>
-    <div class="footer-admin-bar">
-      <a class="footer-admin-link" href="{{ROOT}}admin/">Sekce pro vedení</a>
-      <span id="footer-logout-container" hidden>
-        · <button type="button" class="btn-logout" id="footer-logout-btn">Odhlásit se</button>
-      </span>
+    <div class="footer-col footer-col--billing">
+      <p class="footer-billing__title">Česká tábornická unie - T.K. Modrý Kruh Praha, p.s. · Oddíl ROJ</p>
+      <p class="footer-billing__info">
+        <span>IČO: 00674524</span> ·
+        <span>Číslo účtu: 2001908933/2010</span>
+      </p>
+      <p class="footer-billing__info">
+        <span>Sídlo: U Nikolajky 833/5, 150 00 Praha 5</span>
+      </p>
+      <p class="footer-billing__info">
+        <span>Klubovna: Radlická 2000/3, 150 00 Praha 5</span>
+      </p>
+      <p class="footer-billing__copyright">
+        © Oddíl ROJ 2026
+      </p>
     </div>
   </div>
 </footer>

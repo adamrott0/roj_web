@@ -14,7 +14,7 @@ export function formatDate(iso) {
   const parts = iso.split("-").map(Number);
   if (parts.length < 3 || parts.some(isNaN)) return iso;
   const [y, m, d] = parts;
-  return `${d}. ${m}. ${y}`;
+  return `${d}.\u00A0${m}.\u00A0${y}`;
 }
 
 export function formatDateRange(start, end) {
@@ -23,23 +23,26 @@ export function formatDateRange(start, end) {
   if (startParts.length < 3 || startParts.some(isNaN)) return start;
   const [sy, sm, sd] = startParts;
 
+  // Používáme nedělitelné mezery (\u00A0), aby se termín nikdy nezalomil uprostřed data
+  const nbsp = "\u00A0";
+
   if (!end || end === start) {
-    return `${sd}. ${sm}. ${sy}`;
+    return `${sd}.${nbsp}${sm}.${nbsp}${sy}`;
   }
 
   const endParts = end.split("-").map(Number);
   if (endParts.length < 3 || endParts.some(isNaN)) {
-    return `${sd}. ${sm}. ${sy} – ${end}`;
+    return `${sd}.${nbsp}${sm}.${nbsp}${sy}${nbsp}–${nbsp}${end}`;
   }
   const [ey, em, ed] = endParts;
 
   if (sy === ey && sm === em) {
-    return `${sd}. – ${ed}. ${sm}. ${sy}`;
+    return `${sd}.${nbsp}–${nbsp}${ed}.${nbsp}${sm}.${nbsp}${sy}`;
   }
   if (sy === ey) {
-    return `${sd}. ${sm}. – ${ed}. ${em}. ${sy}`;
+    return `${sd}.${nbsp}${sm}.${nbsp}–${nbsp}${ed}.${nbsp}${em}.${nbsp}${sy}`;
   }
-  return `${sd}. ${sm}. ${sy} – ${ed}. ${em}. ${ey}`;
+  return `${sd}.${nbsp}${sm}.${nbsp}${sy}${nbsp}–${nbsp}${ed}.${nbsp}${em}.${nbsp}${ey}`;
 }
 
 export function formatTimestamp(ts) {
