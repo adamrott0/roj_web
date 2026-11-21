@@ -155,7 +155,7 @@ function createEventCard(event, openModal) {
         .trim()
         .replace(/\s+/g, "_");
       const ext = event.flyerPath?.split(".").pop() || "webp";
-      const filename = `${safeName}.${ext}`;
+      const filename = `listecek_${safeName}.${ext}`;
       downloadImage(event.flyerUrl, filename, downloadBtn);
     });
 
@@ -176,9 +176,10 @@ async function renderEvents() {
   try {
     const events = await fetchEvents();
     const today = getTodayIso();
+    const visibleEvents = events.filter((ev) => !ev.hide);
 
-    const upcoming = events.filter((ev) => (ev.dateEnd || ev.dateStart) >= today);
-    const past = events.filter((ev) => (ev.dateEnd || ev.dateStart) < today).reverse();
+    const upcoming = visibleEvents.filter((ev) => (ev.dateEnd || ev.dateStart) >= today);
+    const past = visibleEvents.filter((ev) => (ev.dateEnd || ev.dateStart) < today).reverse();
     const openModal = createModal();
 
     const renderGroup = (title, groupEvents) => {
@@ -210,7 +211,8 @@ export async function renderNextEvent() {
   try {
     const events = await fetchEvents();
     const today = getTodayIso();
-    const nextEvent = events.find((ev) => (ev.dateEnd || ev.dateStart) >= today);
+    const visibleEvents = events.filter((ev) => !ev.hide);
+    const nextEvent = visibleEvents.find((ev) => (ev.dateEnd || ev.dateStart) >= today);
 
     if (!nextEvent) {
       target.textContent = "Další akce brzy doplníme.";

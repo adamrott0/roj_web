@@ -30,63 +30,176 @@
       </section>
 
       <div id="admin-view" hidden>
-        <section class="admin-card">
-          <h2 id="form-title" style="margin-top:0; font-size:1.2rem;">Přidat novou akci</h2>
-          <form id="event-form" class="admin-form">
-            <div class="admin-form-grid">
-              <label>Název akce *
-                <input id="ev-name" type="text" required>
-              </label>
-              <label>Datum od *
-                <input id="ev-date-start" type="date" required>
-              </label>
-              <label>Datum do (volitelné)
-                <input id="ev-date-end" type="date">
-              </label>
-              <label>Kontaktní e-mail (volitelné)
-                <input id="ev-mail" type="email">
-              </label>
-              <label>Kontaktní telefon (volitelné)
-                <input id="ev-phone" type="tel" inputmode="tel" autocomplete="tel">
-              </label>
-            </div>
+        <!-- Navigace mezi záložkami -->
+        <div class="admin-tabs" role="tablist">
+          <button type="button" class="admin-tab is-active" id="tab-btn-akce" data-tab="akce" role="tab" aria-selected="true" aria-controls="view-akce">
+            Akce <span id="count-akce" class="admin-tab-count">0</span>
+          </button>
+          <button type="button" class="admin-tab" id="tab-btn-vedeni" data-tab="vedeni" role="tab" aria-selected="false" aria-controls="view-vedeni">
+            Vedení <span id="count-vedeni" class="admin-tab-count">0</span>
+          </button>
+          <button type="button" class="admin-tab" id="tab-btn-log" data-tab="log" role="tab" aria-selected="false" aria-controls="view-log">
+            Historie změn
+          </button>
+        </div>
 
-            <div style="margin-top:1rem;">
-              <label>Lísteček (obrázek, volitelné)
-                <input id="ev-flyer" type="file" accept="image/*">
-              </label>
-              <div id="current-flyer-box" class="meta" style="margin-top:.4rem;" hidden>
-                Aktuální soubor: <a id="current-flyer-link" href="#" target="_blank" rel="noopener">zobrazit</a>
-                <label style="display:inline-flex; flex-direction:row; align-items:center; margin-left:.75rem; font-weight:400;">
-                  <input id="ev-remove-flyer" type="checkbox"> Smazat stávající lísteček
-                </label>
-              </div>
-            </div>
-
-            <div class="admin-actions">
-              <button id="submit-btn" class="btn" type="submit">Uložit akci</button>
-              <button id="cancel-edit-btn" class="btn secondary" type="button" hidden>Zrušit úpravu</button>
-              <span id="form-status" class="status"></span>
-            </div>
-          </form>
+        <!-- Záložka: Akce -->
+        <section id="view-akce" role="tabpanel" aria-labelledby="tab-btn-akce">
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Seznam akcí</h2>
+            <button type="button" class="btn" id="open-event-modal-btn">+ Přidat novou akci</button>
+          </div>
+          <div class="admin-card admin-card--table">
+            <div id="events-list" class="meta" style="padding: .5rem 1rem;">Načítám akce…</div>
+          </div>
         </section>
 
-        <section class="admin-card">
-          <h2 style="margin-top:0; font-size:1.2rem;">Seznam akcí</h2>
-          <div id="events-list" class="meta">Načítám akce…</div>
+        <!-- Záložka: Vedení -->
+        <section id="view-vedeni" role="tabpanel" aria-labelledby="tab-btn-vedeni" hidden>
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Seznam vedoucích</h2>
+            <button type="button" class="btn" id="open-leader-modal-btn">+ Přidat nového vedoucího</button>
+          </div>
+          <div class="admin-card admin-card--table">
+            <div id="leaders-list" class="meta" style="padding: .5rem 1rem;">Načítám vedoucí…</div>
+          </div>
+        </section>
+
+        <!-- Záložka: Historie změn -->
+        <section id="view-log" role="tabpanel" aria-labelledby="tab-btn-log" hidden>
+          <div class="admin-section-header">
+            <h2 class="admin-section-title">Historie změn</h2>
+            <button type="button" class="btn secondary btn-sm" id="refresh-log-btn" title="Znovu načíst historii">Obnovit</button>
+          </div>
+          <div class="admin-card admin-card--table">
+            <div id="logs-list" class="meta" style="padding: .5rem 1rem;">Načítám historii změn…</div>
+          </div>
         </section>
       </div>
     </div>
   </main>
 
+  <!-- Modální okno: Formulář akce -->
+  <div id="event-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="event-modal-title">
+    <div class="modal-form-card">
+      <div class="modal-form-header">
+        <h2 id="event-modal-title">Přidat novou akci</h2>
+        <button type="button" class="modal-close-btn" id="close-event-modal-btn" aria-label="Zavřít formulář">×</button>
+      </div>
+      <form id="event-form" class="admin-form">
+        <div class="admin-form-grid">
+          <label>Název akce *
+            <input id="ev-name" type="text" required>
+          </label>
+          <label>Datum od *
+            <input id="ev-date-start" type="date" required>
+          </label>
+          <label>Datum do (volitelné)
+            <input id="ev-date-end" type="date">
+          </label>
+          <label>Kontaktní e-mail (volitelné)
+            <input id="ev-mail" type="email">
+          </label>
+          <label>Kontaktní telefon (volitelné)
+            <input id="ev-phone" type="tel" inputmode="tel" autocomplete="tel">
+          </label>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <label>Lísteček (obrázek, volitelné)
+            <input id="ev-flyer" type="file" accept="image/*">
+          </label>
+          <div id="current-flyer-box" class="meta" style="margin-top:.4rem;" hidden>
+            Aktuální soubor: <a id="current-flyer-link" href="#" target="_blank" rel="noopener">zobrazit</a>
+            <label class="checkbox-label" style="margin-left:.75rem;">
+              <input id="ev-remove-flyer" type="checkbox"> Smazat stávající lísteček
+            </label>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <label class="checkbox-label">
+            <input id="ev-hide" type="checkbox"> Skrýt akci na webu
+          </label>
+          <div class="meta" style="margin-top:.2rem;">Skrytá akce se nezobrazí na veřejném webu, ale zůstane viditelná v administraci.</div>
+        </div>
+
+        <div class="admin-actions">
+          <button id="event-submit-btn" class="btn" type="submit">Uložit akci</button>
+          <button id="event-cancel-btn" class="btn secondary" type="button">Zrušit</button>
+          <span id="event-form-status" class="status"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modální okno: Formulář vedoucího -->
+  <div id="leader-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="leader-modal-title">
+    <div class="modal-form-card">
+      <div class="modal-form-header">
+        <h2 id="leader-modal-title">Přidat nového vedoucího</h2>
+        <button type="button" class="modal-close-btn" id="close-leader-modal-btn" aria-label="Zavřít formulář">×</button>
+      </div>
+      <form id="leader-form" class="admin-form">
+        <div class="admin-form-grid">
+          <label>Jméno a přezdívka *
+            <input id="ldr-name" type="text" required>
+          </label>
+          <label>Oddílová funkce *
+            <input id="ldr-role" type="text" required>
+          </label>
+          <label>Kontaktní e-mail (volitelné)
+            <input id="ldr-mail" type="email">
+          </label>
+          <label>Kontaktní telefon (volitelné)
+            <input id="ldr-phone" type="tel" inputmode="tel" autocomplete="tel">
+          </label>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <label>Profilová fotka (obrázek, povinné)
+            <input id="ldr-photo" type="file" accept="image/*">
+          </label>
+          <div class="meta" style="margin-top:.25rem;">Fotka se automaticky ořízne na poměr 2:3 a zmenší na WebP (max 1600 px).</div>
+          <div id="current-leader-photo-box" class="meta" style="margin-top:.4rem;" hidden>
+            Aktuální fotka: <a id="current-leader-photo-link" href="#" target="_blank" rel="noopener">zobrazit</a>
+            <span style="margin-left:.5rem; font-weight:normal;">(výběrem nového souboru ji nahradíte)</span>
+          </div>
+        </div>
+
+        <div style="margin-top:1rem;">
+          <label class="checkbox-label">
+            <input id="ldr-hide" type="checkbox"> Skrýt vedoucího na webu
+          </label>
+          <div class="meta" style="margin-top:.2rem;">Skrytý vedoucí se nezobrazí na stránce Vedení a kontakt, ale zůstane viditelný v administraci.</div>
+        </div>
+
+        <div class="admin-actions">
+          <button id="leader-submit-btn" class="btn" type="submit">Uložit vedoucího</button>
+          <button id="leader-cancel-btn" class="btn secondary" type="button">Zrušit</button>
+          <span id="leader-form-status" class="status"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Vlastní potvrzovací dialog -->
   <div id="confirm-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="confirm-modal-title">
     <div class="confirm-modal__card">
-      <h3 id="confirm-modal-title" style="margin-top:0; color:var(--forest); font-size:1.25rem;">Smazat akci</h3>
-      <p id="confirm-modal-text" style="margin:.75rem 0 1.5rem; color:var(--ink); line-height:1.5;">Opravdu chcete tuto akci smazat? Tuto akci nelze vzít zpět.</p>
+      <h3 id="confirm-modal-title" style="margin-top:0; color:var(--forest); font-size:1.25rem;">Potvrdit akci</h3>
+      <p id="confirm-modal-text" style="margin:.75rem 0 1.5rem; color:var(--ink); line-height:1.5;">Opravdu chcete tuto operaci provést?</p>
       <div style="display:flex; justify-content:flex-end; gap:.75rem;">
         <button type="button" class="btn secondary" id="confirm-modal-cancel">Zrušit</button>
-        <button type="button" class="btn danger" id="confirm-modal-confirm">Smazat akci</button>
+        <button type="button" class="btn danger" id="confirm-modal-confirm">Potvrdit</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Modální okno pro náhled obrázků v adminu -->
+  <div id="image-modal" class="modal" hidden role="dialog" aria-modal="true" aria-label="Náhled obrázku">
+    <div class="modal__panel">
+      <button type="button" class="modal__close" id="image-modal-close" aria-label="Zavřít náhled">×</button>
+      <img id="image-modal-img" class="modal__image" alt="Náhled">
     </div>
   </div>
 

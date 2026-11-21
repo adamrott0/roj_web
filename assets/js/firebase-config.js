@@ -21,7 +21,7 @@ export const auth = getAuth(app);
  * - true: vynuceně testovací data (i na produkční doméně)
  * - false: vynuceně produkční/ostrá data (i na localhostu nebo Vercelu)
  */
-export const FORCE_TESTING = null;
+export const FORCE_TESTING = false;
 
 function detectTestingMode() {
   if (typeof FORCE_TESTING === "boolean") {
