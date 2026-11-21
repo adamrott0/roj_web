@@ -81,6 +81,17 @@ function setupNavigation() {
   });
 }
 
+function setupStickyHeader() {
+  const header = document.querySelector(".site-header");
+  if (!header) return;
+
+  const onScroll = () => {
+    header.classList.toggle("is-scrolled", window.scrollY > 25);
+  };
+  window.addEventListener("scroll", onScroll, { passive: true });
+  onScroll();
+}
+
 async function initializeComponents() {
   try {
     await Promise.all([
@@ -93,6 +104,7 @@ async function initializeComponents() {
       testingBadge.hidden = !isTesting;
     }
     setupNavigation();
+    setupStickyHeader();
     updateAuthUI(currentUser);
   } catch (error) {
     console.error(error);

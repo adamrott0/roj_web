@@ -79,6 +79,14 @@ const imageModal = document.getElementById("image-modal");
 const imageModalImg = document.getElementById("image-modal-img");
 const imageModalClose = document.getElementById("image-modal-close");
 
+// Detail změn v historii
+const logDetailModal = document.getElementById("log-detail-modal");
+const logDetailTitle = document.getElementById("log-detail-title");
+const logDetailMeta = document.getElementById("log-detail-meta");
+const logDetailList = document.getElementById("log-detail-list");
+const closeLogDetailModalBtn = document.getElementById("close-log-detail-modal-btn");
+const closeLogDetailBtn = document.getElementById("close-log-detail-btn");
+
 // Stav aplikace
 let currentUser = null;
 let cachedEvents = [];
@@ -204,9 +212,16 @@ leaderCancelBtn?.addEventListener("click", () => closeModal(leaderModal));
 
 imageModalClose?.addEventListener("click", () => closeModal(imageModal));
 
+closeLogDetailModalBtn?.addEventListener("click", () => closeModal(logDetailModal));
+closeLogDetailBtn?.addEventListener("click", () => closeModal(logDetailModal));
+logDetailModal?.addEventListener("click", (e) => {
+  if (e.target === logDetailModal) closeModal(logDetailModal);
+});
+
 document.addEventListener("keydown", (e) => {
   if (e.key === "Escape") {
     if (imageModal && !imageModal.hidden) closeModal(imageModal);
+    else if (logDetailModal && !logDetailModal.hidden) closeModal(logDetailModal);
     else if (eventModal && !eventModal.hidden) closeModal(eventModal);
     else if (leaderModal && !leaderModal.hidden) closeModal(leaderModal);
   }
@@ -465,17 +480,35 @@ eventForm?.addEventListener("submit", async (e) => {
 
     if (editingEvent) {
       const changes = [];
-      if (editingEvent.name !== payload.name) changes.push(`název na „${payload.name}“`);
-      if (editingEvent.dateStart !== payload.dateStart || editingEvent.dateEnd !== payload.dateEnd) changes.push("termín");
-      if (newFile) changes.push("nahrán nový lísteček");
-      else if (evRemoveFlyerCheckbox.checked) changes.push("odstraněn lísteček");
-      if (Boolean(editingEvent.hide) !== payload.hide) changes.push(payload.hide ? "skryto na webu" : "zobrazeno na webu");
+      if ((editingEvent.name || "") !== payload.name) {
+        changes.push(`Název: „${editingEvent.name || "–"}“ → „${payload.name}“`);
+      }
+      const oldDates = formatDateRange(editingEvent.dateStart, editingEvent.dateEnd);
+      const newDates = formatDateRange(payload.dateStart, payload.dateEnd);
+      if (oldDates !== newDates) {
+        changes.push(`Termín: ${oldDates} → ${newDates}`);
+      }
+      if ((editingEvent.mail || "") !== payload.mail) {
+        changes.push(`E-mail: „${editingEvent.mail || "–"}“ → „${payload.mail || "–"}“`);
+      }
+      if ((editingEvent.phone || "") !== payload.phone) {
+        changes.push(`Telefon: „${editingEvent.phone || "–"}“ → „${payload.phone || "–"}“`);
+      }
+      if (newFile) {
+        changes.push("Lísteček: nahrán nový obrázek");
+      } else if (evRemoveFlyerCheckbox.checked && editingEvent.flyerUrl) {
+        changes.push("Lísteček: odstraněn obrázek");
+      }
+      if (Boolean(editingEvent.hide) !== payload.hide) {
+        changes.push(payload.hide ? "Viditelnost: skryto na webu" : "Viditelnost: zobrazeno na webu");
+      }
 
       await updateDoc(doc(db, getCollectionName("akce"), editingEvent.id), payload);
-      logAction("update", "akce", payload.name, changes.length > 0 ? `Změny: ${changes.join(", ")}` : "Úprava údajů akce");
+      const summary = changes.length > 0 ? changes.join("; ") : "Úprava údajů akce";
+      logAction("update", "akce", payload.name, summary, changes);
     } else {
       await addDoc(collection(db, getCollectionName("akce")), payload);
-      logAction("create", "akce", payload.name, `Termín: ${formatDateRange(payload.dateStart, payload.dateEnd)}`);
+      logAction("create", "akce", payload.name, `Termín: ${formatDateRange(payload.dateStart, payload.dateEnd)}`, []);
     }
 
     closeModal(eventModal);
@@ -493,7 +526,7 @@ async function deleteEvent(ev) {
   try {
     if (ev.flyerPath) await safeDeleteStorageFile(ev.flyerPath);
     await deleteDoc(doc(db, getCollectionName("akce"), ev.id));
-    logAction("delete", "akce", ev.name, "Smazání akce");
+    logAction("delete", "akce", ev.name, `Termín: ${formatDateRange(ev.dateStart, ev.dateEnd)}`, []);
     if (editingEvent?.id === ev.id) {
       closeModal(eventModal);
       resetEventForm();
@@ -765,16 +798,31 @@ leaderForm?.addEventListener("submit", async (e) => {
 
     if (editingLeader) {
       const changes = [];
-      if (editingLeader.name !== payload.name) changes.push(`jméno na „${payload.name}“`);
-      if (editingLeader.role !== payload.role) changes.push(`funkce na „${payload.role}“`);
-      if (newFile) changes.push("nahrána nová fotka");
-      if (Boolean(editingLeader.hide) !== payload.hide) changes.push(payload.hide ? "skryto na webu" : "zobrazeno na webu");
+      if ((editingLeader.name || "") !== payload.name) {
+        changes.push(`Jméno: „${editingLeader.name || "–"}“ → „${payload.name}“`);
+      }
+      if ((editingLeader.role || "") !== payload.role) {
+        changes.push(`Funkce: „${editingLeader.role || "–"}“ → „${payload.role}“`);
+      }
+      if ((editingLeader.mail || "") !== payload.mail) {
+        changes.push(`E-mail: „${editingLeader.mail || "–"}“ → „${payload.mail || "–"}“`);
+      }
+      if ((editingLeader.phone || "") !== payload.phone) {
+        changes.push(`Telefon: „${editingLeader.phone || "–"}“ → „${payload.phone || "–"}“`);
+      }
+      if (newFile) {
+        changes.push("Profilová fotka: nahrána nová fotka");
+      }
+      if (Boolean(editingLeader.hide) !== payload.hide) {
+        changes.push(payload.hide ? "Viditelnost: skryto na webu" : "Viditelnost: zobrazeno na webu");
+      }
 
       await updateDoc(doc(db, getCollectionName("vedeni"), editingLeader.id), payload);
-      logAction("update", "vedeni", payload.name, changes.length > 0 ? `Změny: ${changes.join(", ")}` : "Úprava údajů vedoucího");
+      const summary = changes.length > 0 ? changes.join("; ") : "Úprava údajů vedoucího";
+      logAction("update", "vedeni", payload.name, summary, changes);
     } else {
       await addDoc(collection(db, getCollectionName("vedeni")), payload);
-      logAction("create", "vedeni", payload.name, `Funkce: ${payload.role}`);
+      logAction("create", "vedeni", payload.name, `Funkce: ${payload.role}`, []);
     }
 
     closeModal(leaderModal);
@@ -792,7 +840,7 @@ async function deleteLeader(ldr) {
   try {
     if (ldr.photoPath) await safeDeleteStorageFile(ldr.photoPath);
     await deleteDoc(doc(db, getCollectionName("vedeni"), ldr.id));
-    logAction("delete", "vedeni", ldr.name, `Funkce: ${ldr.role || ""}`);
+    logAction("delete", "vedeni", ldr.name, `Funkce: ${ldr.role || "–"}`, []);
     if (editingLeader?.id === ldr.id) {
       closeModal(leaderModal);
       resetLeaderForm();
@@ -813,17 +861,19 @@ function setLeaderStatus(msg, isError = false) {
 // 3. SEKCE HISTORIE ZMĚN (AUDIT LOG)
 // ==========================================================================
 
-async function logAction(action, targetType, targetName, details = "") {
+async function logAction(action, targetType, targetName, details = "", changes = []) {
   if (!currentUser) return;
   try {
-    await addDoc(collection(db, getCollectionName("log")), {
+    const entry = {
       createdAt: serverTimestamp(),
       userEmail: currentUser.email,
       action,
       targetType,
       targetName: targetName || "",
-      details: details || ""
-    });
+      details: details || "",
+      changes: Array.isArray(changes) ? changes : []
+    };
+    await addDoc(collection(db, getCollectionName("log")), entry);
   } catch (err) {
     console.warn("Zápis do historie změn se nezdařil:", err);
   }
@@ -909,6 +959,24 @@ function renderLogs() {
     const badge = actionBadges[item.action] || `<span class="badge-log">${escapeHtml(item.action)}</span>`;
     const section = targetTypeLabels[item.targetType] || escapeHtml(item.targetType || "–");
 
+    let detailHtml = "";
+    if (Array.isArray(item.changes) && item.changes.length > 0) {
+      if (item.changes.length === 1) {
+        detailHtml = `<div class="admin-cell-sub">${escapeHtml(item.changes[0])}</div>`;
+      } else {
+        detailHtml = `
+          <div class="admin-cell-sub">
+            <span>${escapeHtml(item.changes[0])}</span>
+            <button type="button" class="btn-log-detail" data-show-log-changes="${item.id}" title="Zobrazit všech ${item.changes.length} změn">
+              +${item.changes.length - 1} další (zobrazit detail)
+            </button>
+          </div>
+        `;
+      }
+    } else if (item.details) {
+      detailHtml = `<div class="admin-cell-sub">${escapeHtml(item.details)}</div>`;
+    }
+
     return `
       <tr>
         <td style="white-space: nowrap;">
@@ -925,7 +993,7 @@ function renderLogs() {
         </td>
         <td>
           <div class="admin-cell-main"><strong>${escapeHtml(item.targetName || "–")}</strong></div>
-          ${item.details ? `<div class="admin-cell-sub">${escapeHtml(item.details)}</div>` : ""}
+          ${detailHtml}
         </td>
       </tr>
     `;
@@ -958,9 +1026,34 @@ function renderLogs() {
   `;
 }
 
+function showLogDetail(logItem) {
+  if (!logDetailModal || !logItem) return;
+  const targetLabel = logItem.targetType === "akce" ? "akce" : (logItem.targetType === "vedeni" ? "vedoucího" : "položky");
+  if (logDetailTitle) {
+    logDetailTitle.textContent = `Změny u ${targetLabel} „${logItem.targetName || ""}“`;
+  }
+  if (logDetailMeta) {
+    logDetailMeta.textContent = `${formatTimestamp(logItem.createdAt)} · provedl/a ${logItem.userEmail || "neznámý uživatel"}`;
+  }
+  if (logDetailList) {
+    const list = Array.isArray(logItem.changes) && logItem.changes.length > 0
+      ? logItem.changes
+      : (logItem.details ? [logItem.details] : ["Žádné podrobnosti k dispozici."]);
+    logDetailList.innerHTML = list.map((c) => `<li>${escapeHtml(c)}</li>`).join("");
+  }
+  openModal(logDetailModal);
+}
+
 logsList?.addEventListener("click", async (e) => {
-  if (e.target.closest("#load-more-logs-btn")) {
+  const moreBtn = e.target.closest("#load-more-logs-btn");
+  const detailBtn = e.target.closest("[data-show-log-changes]");
+
+  if (moreBtn) {
     await loadLogs(true);
+  } else if (detailBtn) {
+    const logId = detailBtn.dataset.showLogChanges;
+    const logItem = cachedLogs.find((l) => l.id === logId);
+    if (logItem) showLogDetail(logItem);
   }
 });
 

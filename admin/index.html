@@ -203,6 +203,21 @@
     </div>
   </div>
 
+  <!-- Modální okno: Detail změn v historii -->
+  <div id="log-detail-modal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="log-detail-title">
+    <div class="confirm-modal__card" style="max-width:34rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; border-bottom:1px solid var(--line); padding-bottom:.5rem;">
+        <h3 id="log-detail-title" style="margin:0; color:var(--forest); font-size:1.2rem;">Detail provedených změn</h3>
+        <button type="button" class="modal-close-btn" id="close-log-detail-modal-btn" aria-label="Zavřít">×</button>
+      </div>
+      <div id="log-detail-meta" class="meta" style="margin-bottom:.75rem;"></div>
+      <ul id="log-detail-list" style="margin:0; padding-left:1.25rem; font-size:.92rem; line-height:1.6; color:var(--ink);"></ul>
+      <div style="display:flex; justify-content:flex-end; margin-top:1.25rem;">
+        <button type="button" class="btn secondary btn-sm" id="close-log-detail-btn">Zavřít</button>
+      </div>
+    </div>
+  </div>
+
   <div data-component="footer"></div>
 
   <script type="module" src="../assets/js/komponenty.js"></script>
