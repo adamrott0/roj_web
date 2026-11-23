@@ -50,18 +50,33 @@ function createLeaderCard(person) {
     image.dataset.previewAlt = `Portrét: ${person.name}`;
   }
   card.append(image);
-  card.append(createElement("h3", "leader-card__name", person.name));
-  card.append(createElement("p", "leader-card__role", person.role));
+
+  if (person.name) {
+    const nameEl = createElement("h3", "leader-card__name", person.name);
+    nameEl.style.setProperty("--len", person.name.length);
+    card.append(nameEl);
+  }
+
+  if (person.role) {
+    const roleEl = createElement("p", "leader-card__role", person.role);
+    roleEl.style.setProperty("--len", person.role.length);
+    card.append(roleEl);
+  }
 
   if (person.mail) {
-    const mail = createElement("a", "leader-card__contact", person.mail);
+    const p = createElement("p", "leader-card__contact leader-card__contact--mail");
+    const mail = createElement("a", "", person.mail);
     mail.href = `mailto:${person.mail}`;
-    card.append(mail);
+    p.style.setProperty("--len", person.mail.length);
+    p.append(mail);
+    card.append(p);
   }
+
   if (person.phone) {
-    const p = createElement("p", "leader-card__contact");
+    const p = createElement("p", "leader-card__contact leader-card__contact--phone");
     const phone = createElement("a", "", person.phone);
     phone.href = `tel:${person.phone.replace(/\s+/g, "")}`;
+    p.style.setProperty("--len", person.phone.length);
     p.append(phone);
     card.append(p);
   }
