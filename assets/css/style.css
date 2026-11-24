@@ -369,6 +369,34 @@ body.modal-open {
 .modal__panel { position: relative; display: flex; max-width: 100%; max-height: 100%; }
 .modal__image { display: block; max-width: 100%; max-height: calc(100dvh - 1.5rem); width: auto; height: auto; box-shadow: 0 1rem 3rem rgba(0, 0, 0, .35); }
 
+#image-modal {
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#image-modal .modal__panel {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+}
+#image-modal .modal__image {
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  will-change: transform;
+  transform-origin: center center;
+}
+#image-modal .modal__close-btn--floating {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 50;
+}
+
 /* Jednotná zavírací tlačítka ve všech modálech */
 .modal__close-btn,
 .modal-close-btn,
@@ -631,6 +659,7 @@ body.modal-open {
   .modal { padding: 1rem; }
   .modal__close-btn--floating,
   .modal__close { top: .25rem; right: .25rem; }
+  #image-modal .modal__close-btn--floating { top: .6rem; right: .6rem; }
   .rajce-albums-view tbody { display: block !important; }
   .rajce-albums-view, .rajce-albums-view tbody, .rajce-albums-view tr, .rajce-albums-view td { width: 100% !important; }
   .rajce-albums-view-item { display: block !important; }
