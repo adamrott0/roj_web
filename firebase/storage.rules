@@ -1,22 +1,20 @@
 rules_version = '2';
-// Tento soubor byl automaticky vygenerován ze souboru admins.json
-// Pro úpravu pravidel nebo adminů upravte firebase/admins.json a spusťte: npm run build:rules
 
 service firebase.storage {
   match /b/{bucket}/o {
+    function isSuperadmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() == 'adam.rott@modrykruh.cz';
+    }
+
     function isAdmin() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email in [
-          'adam.rott@modrykruh.cz',
-          'aneta.merinska@modrykruh.cz',
-          'andrea.holubova@modrykruh.cz',
-          'david.prochazka@modrykruh.cz',
-          'lukas.dostal@modrykruh.cz',
-          'jiri.merinsky@modrykruh.cz',
-          'alexandr.sekera@modrykruh.cz',
-          'ondrej.krizek@modrykruh.cz'
-        ];
+        && (
+          isSuperadmin()
+          || firestore.exists(/databases/(default)/documents/admins/$(request.auth.token.email.lower()))
+        );
     }
 
     match /{allPaths=**} {

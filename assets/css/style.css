@@ -809,6 +809,7 @@ body.modal-open {
 .badge-log--create { background: #e6f4ea; color: #137333; }
 .badge-log--update { background: #e8f0fe; color: #1a73e8; }
 .badge-log--delete { background: #fce8e6; color: #c5221f; }
+.badge-admin-super { display: inline-block; font-size: .72rem; font-weight: 700; padding: .15rem .45rem; border-radius: .25rem; letter-spacing: .02em; white-space: nowrap; background: var(--moss); color: var(--forest); }
 .btn-log-detail { display: inline-block; margin-left: .35rem; padding: .1rem .45rem; background: var(--moss); border: 1px solid var(--forest); border-radius: .25rem; color: var(--forest); font: inherit; font-size: .75rem; font-weight: 600; cursor: pointer; text-decoration: none; white-space: nowrap; transition: background .15s ease, color .15s ease; }
 .btn-log-detail:hover { background: var(--forest); color: #fff; }
 

@@ -1,22 +1,29 @@
 rules_version = '2';
-// Tento soubor byl automaticky vygenerován ze souboru admins.json
-// Pro úpravu pravidel nebo adminů upravte firebase/admins.json a spusťte: npm run build:rules
 
 service cloud.firestore {
   match /databases/{database}/documents {
+    function isSuperadmin() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.email.lower() == 'adam.rott@modrykruh.cz';
+    }
+
     function isAdmin() {
       return request.auth != null
         && request.auth.token.email_verified == true
-        && request.auth.token.email in [
-          'adam.rott@modrykruh.cz',
-          'aneta.merinska@modrykruh.cz',
-          'andrea.holubova@modrykruh.cz',
-          'david.prochazka@modrykruh.cz',
-          'lukas.dostal@modrykruh.cz',
-          'jiri.merinsky@modrykruh.cz',
-          'alexandr.sekera@modrykruh.cz',
-          'ondrej.krizek@modrykruh.cz'
-        ];
+        && (
+          isSuperadmin()
+          || exists(/databases/$(database)/documents/admins/$(request.auth.token.email.lower()))
+        );
+    }
+
+    // Správa administrátorů (jednotná kolekce admins nezávisle na isTesting)
+    match /admins/{email} {
+      allow read: if isAdmin();
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin()
+        && email != 'adam.rott@modrykruh.cz'
+        && email != request.auth.token.email.lower();
     }
 
     // Akce (produkční i testovací)

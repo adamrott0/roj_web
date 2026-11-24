@@ -4,7 +4,5 @@
   "private": true,
   "type": "module",
   "description": "Webové stránky oddílu ROJ",
-  "scripts": {
-    "build:rules": "node firebase/build-rules.mjs"
-  }
+  "scripts": {}
 }

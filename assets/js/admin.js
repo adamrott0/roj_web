@@ -3,7 +3,7 @@ import {
   GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-auth.js";
 import {
-  collection, doc, getDoc, getDocs, addDoc, updateDoc, deleteDoc,
+  collection, doc, getDoc, getDocs, addDoc, setDoc, updateDoc, deleteDoc,
   query, orderBy, serverTimestamp, writeBatch, limit, startAfter
 } from "https://www.gstatic.com/firebasejs/13.4.0/firebase-firestore.js";
 import {
@@ -27,14 +27,32 @@ const authError = document.getElementById("auth-error");
 // Záložky
 const tabBtnAkce = document.getElementById("tab-btn-akce");
 const tabBtnVedeni = document.getElementById("tab-btn-vedeni");
+const tabBtnAdmins = document.getElementById("tab-btn-admins");
 const tabBtnLog = document.getElementById("tab-btn-log");
 const viewAkce = document.getElementById("view-akce");
 const viewVedeni = document.getElementById("view-vedeni");
+const viewAdmins = document.getElementById("view-admins");
 const viewLog = document.getElementById("view-log");
 const countAkce = document.getElementById("count-akce");
 const countVedeni = document.getElementById("count-vedeni");
+const countAdmins = document.getElementById("count-admins");
 const logsList = document.getElementById("logs-list");
 const refreshLogBtn = document.getElementById("refresh-log-btn");
+
+// Správci – seznam a modal
+const adminsList = document.getElementById("admins-list");
+const openAdminModalBtn = document.getElementById("open-admin-modal-btn");
+const adminModal = document.getElementById("admin-modal");
+const closeAdminModalBtn = document.getElementById("close-admin-modal-btn");
+const adminCancelBtn = document.getElementById("admin-cancel-btn");
+const adminForm = document.getElementById("admin-form");
+const adminModalTitle = document.getElementById("admin-modal-title");
+const adminSubmitBtn = document.getElementById("admin-submit-btn");
+const adminFormStatus = document.getElementById("admin-form-status");
+const adminDocIdInput = document.getElementById("admin-doc-id");
+const adminEmailInput = document.getElementById("admin-email");
+const adminNameInput = document.getElementById("admin-name");
+const adminSuperNotice = document.getElementById("admin-super-notice");
 
 // Akce – seznam a modal
 const eventsList = document.getElementById("events-list");
@@ -87,12 +105,15 @@ const closeLogDetailModalBtn = document.getElementById("close-log-detail-modal-b
 const closeLogDetailBtn = document.getElementById("close-log-detail-btn");
 
 // Stav aplikace
+const SUPERADMIN_EMAIL = "adam.rott@modrykruh.cz";
 let currentUser = null;
 let cachedEvents = [];
 let cachedLeaders = [];
+let cachedAdmins = [];
 let cachedLogs = [];
 let editingEvent = null;
 let editingLeader = null;
+let editingAdmin = null;
 
 // --- AUTOMATICKÉ FORMÁTOVÁNÍ TELEFONŮ ---
 evPhoneInput?.addEventListener("input", (e) => {
@@ -133,12 +154,32 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   currentUser = user;
-  if (userEmailEl) userEmailEl.textContent = user.email;
+  updateUserBar();
   if (authError) authError.hidden = true;
   if (loginView) loginView.hidden = true;
   if (adminView) adminView.hidden = false;
   if (userBar) userBar.hidden = false;
 
+  // Pokud je přihlášen Superadmin, zkontrolujeme zda existuje jeho dokument v admins a případně ho automaticky inicializujeme
+  if (user.email?.toLowerCase() === SUPERADMIN_EMAIL) {
+    try {
+      const superDocRef = doc(db, "admins", SUPERADMIN_EMAIL);
+      const superDoc = await getDoc(superDocRef);
+      if (!superDoc.exists()) {
+        await setDoc(superDocRef, {
+          email: SUPERADMIN_EMAIL,
+          name: "Adam",
+          isSuperadmin: true,
+          editedAt: serverTimestamp(),
+          editedBy: SUPERADMIN_EMAIL
+        });
+      }
+    } catch (err) {
+      console.warn("Automatická inicializace Superadmina se nezdařila:", err);
+    }
+  }
+
+  await loadAdmins();
   await Promise.all([loadEvents(), loadLeaders()]);
 });
 
@@ -151,12 +192,14 @@ function showAuthError(msg) {
 // --- PŘEPÍNÁNÍ ZÁLOŽEK ---
 tabBtnAkce?.addEventListener("click", () => switchTab("akce"));
 tabBtnVedeni?.addEventListener("click", () => switchTab("vedeni"));
+tabBtnAdmins?.addEventListener("click", () => switchTab("admins"));
 tabBtnLog?.addEventListener("click", () => switchTab("log"));
 refreshLogBtn?.addEventListener("click", () => loadLogs());
 
 function switchTab(tabName) {
   const isAkce = tabName === "akce";
   const isVedeni = tabName === "vedeni";
+  const isAdmins = tabName === "admins";
   const isLog = tabName === "log";
 
   tabBtnAkce?.classList.toggle("is-active", isAkce);
@@ -167,11 +210,17 @@ function switchTab(tabName) {
   tabBtnVedeni?.setAttribute("aria-selected", isVedeni ? "true" : "false");
   if (viewVedeni) viewVedeni.hidden = !isVedeni;
 
+  tabBtnAdmins?.classList.toggle("is-active", isAdmins);
+  tabBtnAdmins?.setAttribute("aria-selected", isAdmins ? "true" : "false");
+  if (viewAdmins) viewAdmins.hidden = !isAdmins;
+
   tabBtnLog?.classList.toggle("is-active", isLog);
   tabBtnLog?.setAttribute("aria-selected", isLog ? "true" : "false");
   if (viewLog) viewLog.hidden = !isLog;
 
-  if (isLog) {
+  if (isAdmins) {
+    loadAdmins();
+  } else if (isLog) {
     loadLogs();
   }
 }
@@ -182,6 +231,11 @@ eventCancelBtn?.addEventListener("click", () => closeModal(eventModal));
 
 closeLeaderModalBtn?.addEventListener("click", () => closeModal(leaderModal));
 leaderCancelBtn?.addEventListener("click", () => closeModal(leaderModal));
+
+closeAdminModalBtn?.addEventListener("click", () => closeModal(adminModal));
+adminCancelBtn?.addEventListener("click", () => closeModal(adminModal));
+openAdminModalBtn?.addEventListener("click", () => openAdminModal(null));
+adminForm?.addEventListener("submit", handleAdminSubmit);
 
 closeLogDetailModalBtn?.addEventListener("click", () => closeModal(logDetailModal));
 closeLogDetailBtn?.addEventListener("click", () => closeModal(logDetailModal));
@@ -283,7 +337,7 @@ function renderEvents() {
           <button type="button" class="btn danger btn-sm" data-delete-event="${ev.id}">Smazat</button>
         </td>
         <td style="white-space: nowrap;">
-          <div class="admin-cell-main">${escapeHtml(ev.updatedBy || "–")}</div>
+          <div class="admin-cell-main" title="${escapeHtml(ev.updatedBy || "")}">${escapeHtml(getAdminDisplayName(ev.updatedBy))}</div>
           <div class="admin-cell-sub">${formatTimestamp(ev.updatedAt)}</div>
         </td>
       </tr>
@@ -550,7 +604,7 @@ function renderLeaders() {
           <button type="button" class="btn danger btn-sm" data-delete-leader="${ldr.id}">Smazat</button>
         </td>
         <td style="white-space: nowrap;">
-          <div class="admin-cell-main">${escapeHtml(ldr.updatedBy || "–")}</div>
+          <div class="admin-cell-main" title="${escapeHtml(ldr.updatedBy || "")}">${escapeHtml(getAdminDisplayName(ldr.updatedBy))}</div>
           <div class="admin-cell-sub">${formatTimestamp(ldr.updatedAt)}</div>
         </td>
       </tr>
@@ -798,7 +852,277 @@ function setLeaderStatus(msg, isError = false) {
 }
 
 // ==========================================================================
-// 3. SEKCE HISTORIE ZMĚN (AUDIT LOG)
+// 3. SEKCE SPRÁVCI (ADMINS)
+// ==========================================================================
+
+// Pomocné funkce pro zobrazení přezdívek správců
+function getAdminDisplayName(email) {
+  if (!email) return "–";
+  const normalized = email.toLowerCase();
+  const found = cachedAdmins.find((a) => (a.email || a.id).toLowerCase() === normalized);
+  if (found && found.name && found.name.trim()) {
+    return found.name.trim();
+  }
+  return email;
+}
+
+function getAdminDisplayFullName(email) {
+  if (!email) return "neznámý uživatel";
+  const normalized = email.toLowerCase();
+  const found = cachedAdmins.find((a) => (a.email || a.id).toLowerCase() === normalized);
+  if (found && found.name && found.name.trim()) {
+    return `${found.name.trim()} (${email})`;
+  }
+  return email;
+}
+
+function updateUserBar() {
+  if (!userEmailEl || !currentUser) return;
+  const name = getAdminDisplayName(currentUser.email);
+  userEmailEl.textContent = name;
+  userEmailEl.title = currentUser.email;
+}
+
+async function loadAdmins() {
+  if (!adminsList) return;
+
+  try {
+    const q = query(collection(db, "admins"), orderBy("email", "asc"));
+    const snapshot = await getDocs(q);
+    cachedAdmins = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+
+    updateUserBar();
+
+    if (countAdmins) countAdmins.textContent = cachedAdmins.length;
+
+    if (cachedAdmins.length === 0) {
+      adminsList.innerHTML = `
+        <div class="meta" style="padding:1rem;">
+          Zatím nejsou v databázi evidováni žádní správci. Klikněte na <strong>+ Přidat správce</strong> pro přidání prvního účtu.
+        </div>
+      `;
+      return;
+    }
+
+    let html = `
+      <div class="admin-table-wrap">
+        <table class="admin-table">
+          <thead>
+            <tr>
+              <th>Google E-mail</th>
+              <th>Jméno / Přezdívka</th>
+              <th>Naposledy upravil</th>
+              <th>Kdy</th>
+              <th style="text-align:right;">Akce</th>
+            </tr>
+          </thead>
+          <tbody>
+    `;
+
+    cachedAdmins.forEach((adm) => {
+      const email = adm.email || adm.id;
+      const isSuper = email.toLowerCase() === SUPERADMIN_EMAIL || adm.isSuperadmin === true;
+      const isSelf = email.toLowerCase() === currentUser?.email?.toLowerCase();
+
+      const superBadge = isSuper ? `<span class="badge-admin-super" style="margin-left:.5rem;">Hlavní správce</span>` : "";
+      const nameDisplay = adm.name ? escapeHtml(adm.name) : '<span class="meta">–</span>';
+      const editorName = getAdminDisplayName(adm.editedBy);
+      const editedByDisplay = adm.editedBy
+        ? `<span title="${escapeHtml(adm.editedBy)}">${escapeHtml(editorName)}</span>`
+        : '<span class="meta">–</span>';
+      const editedAtDisplay = adm.editedAt ? formatTimestamp(adm.editedAt) : '<span class="meta">–</span>';
+
+      let deleteActionHtml = "";
+      if (isSuper) {
+        deleteActionHtml = `<span class="meta" style="font-size:.8rem; padding:0 .5rem;" title="Hlavního správce nelze odstranit">Nelze smazat</span>`;
+      } else if (isSelf) {
+        deleteActionHtml = `<span class="meta" style="font-size:.8rem; padding:0 .5rem;" title="Nemůžete odstranit svůj vlastní účet">Váš účet</span>`;
+      } else {
+        deleteActionHtml = `<button type="button" class="btn secondary btn-sm delete-admin-btn" data-id="${escapeHtml(adm.id)}" style="color:#b3261e;" title="Odebrat přístup do administrace">Smazat</button>`;
+      }
+
+      html += `
+        <tr>
+          <td>
+            <strong>${escapeHtml(email)}</strong>${superBadge}
+          </td>
+          <td>${nameDisplay}</td>
+          <td class="meta">${editedByDisplay}</td>
+          <td class="meta">${editedAtDisplay}</td>
+          <td class="admin-table-actions">
+            <button type="button" class="btn secondary btn-sm edit-admin-btn" data-id="${escapeHtml(adm.id)}">Upravit</button>
+            ${deleteActionHtml}
+          </td>
+        </tr>
+      `;
+    });
+
+    html += `
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    adminsList.innerHTML = html;
+
+    adminsList.querySelectorAll(".edit-admin-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const found = cachedAdmins.find((a) => a.id === btn.dataset.id);
+        if (found) openAdminModal(found);
+      });
+    });
+
+    adminsList.querySelectorAll(".delete-admin-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const found = cachedAdmins.find((a) => a.id === btn.dataset.id);
+        if (found) deleteAdmin(found);
+      });
+    });
+  } catch (err) {
+    console.error("Chyba při načítání správců:", err);
+    adminsList.innerHTML = `<div class="status error" style="margin:1rem;">Nepodařilo se načíst seznam správců: ${escapeHtml(err.message)}</div>`;
+  }
+}
+
+function openAdminModal(admin = null) {
+  editingAdmin = admin;
+  setAdminStatus("");
+
+  if (!adminModal) return;
+
+  if (admin) {
+    if (adminModalTitle) adminModalTitle.textContent = "Upravit správce";
+    if (adminDocIdInput) adminDocIdInput.value = admin.id;
+    if (adminEmailInput) {
+      adminEmailInput.value = admin.email || admin.id;
+      adminEmailInput.disabled = true; // E-mail je ID dokumentu, nemění se
+    }
+    if (adminNameInput) adminNameInput.value = admin.name || "";
+    const isSuper = (admin.email || admin.id).toLowerCase() === SUPERADMIN_EMAIL || admin.isSuperadmin === true;
+    if (adminSuperNotice) adminSuperNotice.hidden = !isSuper;
+    if (adminSubmitBtn) adminSubmitBtn.textContent = "Uložit změny";
+  } else {
+    if (adminModalTitle) adminModalTitle.textContent = "Přidat správce";
+    if (adminDocIdInput) adminDocIdInput.value = "";
+    if (adminEmailInput) {
+      adminEmailInput.value = "";
+      adminEmailInput.disabled = false;
+    }
+    if (adminNameInput) adminNameInput.value = "";
+    if (adminSuperNotice) adminSuperNotice.hidden = true;
+    if (adminSubmitBtn) adminSubmitBtn.textContent = "Uložit správce";
+  }
+
+  openModal(adminModal);
+  (admin ? adminNameInput : adminEmailInput)?.focus();
+}
+
+async function handleAdminSubmit(e) {
+  e.preventDefault();
+  setAdminStatus("");
+
+  const email = (adminEmailInput?.value || "").trim().toLowerCase();
+  const name = (adminNameInput?.value || "").trim();
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    setAdminStatus("Zadejte prosím platnou e-mailovou adresu.", true);
+    adminEmailInput?.focus();
+    return;
+  }
+
+  const isSuper = email === SUPERADMIN_EMAIL;
+
+  try {
+    if (adminSubmitBtn) adminSubmitBtn.disabled = true;
+
+    if (editingAdmin) {
+      const docRef = doc(db, "admins", editingAdmin.id);
+      const changes = [];
+      if ((editingAdmin.name || "") !== name) {
+        changes.push(`Jméno: „${editingAdmin.name || "–"}“ → „${name || "–"}“`);
+      }
+
+      await updateDoc(docRef, {
+        name,
+        editedAt: serverTimestamp(),
+        editedBy: currentUser?.email || "neznámý"
+      });
+
+      logAction("update", "admin", email, `Úprava údajů správce ${email}`, changes);
+    } else {
+      const docRef = doc(db, "admins", email);
+      const existing = await getDoc(docRef);
+      if (existing.exists()) {
+        setAdminStatus(`Správce s e-mailem ${email} již existuje.`, true);
+        adminEmailInput?.focus();
+        return;
+      }
+
+      await setDoc(docRef, {
+        email,
+        name,
+        isSuperadmin: isSuper,
+        editedAt: serverTimestamp(),
+        editedBy: currentUser?.email || "neznámý"
+      });
+
+      logAction("create", "admin", email, `Přidán nový správce: ${email}${name ? ` (${name})` : ""}`, []);
+    }
+
+    closeModal(adminModal);
+    await loadAdmins();
+    if (cachedEvents.length) renderEvents();
+    if (cachedLeaders.length) renderLeaders();
+    if (cachedLogs.length) renderLogs();
+  } catch (err) {
+    console.error("Chyba při ukládání správce:", err);
+    setAdminStatus("Chyba při ukládání: " + err.message, true);
+  } finally {
+    if (adminSubmitBtn) adminSubmitBtn.disabled = false;
+  }
+}
+
+async function deleteAdmin(adm) {
+  const email = (adm.email || adm.id).toLowerCase();
+  if (email === SUPERADMIN_EMAIL || adm.isSuperadmin) {
+    alert("Hlavního správce nelze odstranit.");
+    return;
+  }
+  if (email === currentUser?.email?.toLowerCase()) {
+    alert("Nemůžete odstranit svůj vlastní účet.");
+    return;
+  }
+
+  const displayTarget = getAdminDisplayFullName(adm.email || adm.id);
+
+  const confirmed = await confirmAction(
+    "Odstranit správce",
+    `Opravdu si přejete odebrat přístup do administrace pro uživatele ${displayTarget}?`
+  );
+  if (!confirmed) return;
+
+  try {
+    await deleteDoc(doc(db, "admins", adm.id));
+    logAction("delete", "admin", adm.email || adm.id, `Odebrán správce ${adm.email || adm.id}`, []);
+    await loadAdmins();
+    if (cachedEvents.length) renderEvents();
+    if (cachedLeaders.length) renderLeaders();
+    if (cachedLogs.length) renderLogs();
+  } catch (err) {
+    console.error("Chyba při mazání správce:", err);
+    alert("Nepodařilo se smazat správce: " + err.message);
+  }
+}
+
+function setAdminStatus(msg, isError = false) {
+  if (!adminFormStatus) return;
+  adminFormStatus.textContent = msg;
+  adminFormStatus.classList.toggle("error", isError);
+}
+
+// ==========================================================================
+// 4. SEKCE HISTORIE ZMĚN (AUDIT LOG)
 // ==========================================================================
 
 async function logAction(action, targetType, targetName, details = "", changes = []) {
@@ -892,7 +1216,8 @@ function renderLogs() {
 
   const targetTypeLabels = {
     akce: "Akce",
-    vedeni: "Vedení"
+    vedeni: "Vedení",
+    admin: "Správci"
   };
 
   const rowsHtml = cachedLogs.map((item) => {
@@ -923,7 +1248,7 @@ function renderLogs() {
           <span class="admin-cell-main">${formatTimestamp(item.createdAt)}</span>
         </td>
         <td style="white-space: nowrap;">
-          <span class="admin-cell-main">${escapeHtml(item.userEmail || "–")}</span>
+          <span class="admin-cell-main" title="${escapeHtml(item.userEmail || "")}">${escapeHtml(getAdminDisplayName(item.userEmail))}</span>
         </td>
         <td style="white-space: nowrap;">
           ${badge}
@@ -968,12 +1293,13 @@ function renderLogs() {
 
 function showLogDetail(logItem) {
   if (!logDetailModal || !logItem) return;
-  const targetLabel = logItem.targetType === "akce" ? "akce" : (logItem.targetType === "vedeni" ? "vedoucího" : "položky");
+  const targetLabel = logItem.targetType === "akce" ? "akce" : (logItem.targetType === "vedeni" ? "vedoucího" : (logItem.targetType === "admin" ? "správce" : "položky"));
   if (logDetailTitle) {
     logDetailTitle.textContent = `Změny u ${targetLabel} „${logItem.targetName || ""}“`;
   }
   if (logDetailMeta) {
-    logDetailMeta.textContent = `${formatTimestamp(logItem.createdAt)} · provedl/a ${logItem.userEmail || "neznámý uživatel"}`;
+    const userDisplay = getAdminDisplayFullName(logItem.userEmail);
+    logDetailMeta.textContent = `${formatTimestamp(logItem.createdAt)} · provedl/a ${userDisplay}`;
   }
   if (logDetailList) {
     const list = Array.isArray(logItem.changes) && logItem.changes.length > 0
